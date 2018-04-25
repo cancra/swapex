@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mock="http://www.mulesoft.org/schema/mule/mock" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd">
+    <spring:beans>
+        <spring:import resource="classpath:api.xml" />
+        <spring:import resource="classpath:global.xml" />
+        <spring:import resource="classpath:transactionalqueue.xml" />
+        <spring:import resource="classpath:ceexchange.xml" />
+    </spring:beans>
+    <munit:config mock-connectors="false" mock-inbounds="false" doc:name="MUnit configuration"/>
+    <http:request-config name="HTTP_Request_Configuration1" host="localhost" port="8081" basePath="/api" doc:name="HTTP Request Configuration">
+            <http:ntlm-authentication username="user" password="crypto"/>
+    </http:request-config>
+    <munit:test name="get:/coinInfoBySymbol:api-config-200-application/json-FlowTest" description="Verifying functionality of [get:/coinInfoBySymbol:api-config-200-application/json]">
+        <set-variable variableName="sym" value="#['ETH']" doc:name="sym" />
+        <http:request config-ref="HTTP_Request_Configuration1" method="GET" path="/coinInfoBySymbol" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+                <http:query-param paramName="sym" value="#[flowVars['sym']]" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
+
+    </munit:test>
+    <munit:test name="get:/currencyInfo:api-config-200-application/json-FlowTest" description="Verifying functionality of [get:/currencyInfo:api-config-200-application/json]">
+        <set-variable variableName="id" value="#['bitcoin']" doc:name="id" />
+        <http:request config-ref="HTTP_Request_Configuration1" method="GET" path="/currencyInfo" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+                <http:query-param paramName="id" value="#[flowVars['id']]" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
+
+    </munit:test>
+    <munit:test name="get:/exchange:api-config-200-application/json-FlowTest" description="Verifying functionality of [get:/exchange:api-config-200-application/json]">
+        <http:request config-ref="HTTP_Request_Configuration1" method="GET" path="/exchange" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
+
+    </munit:test>
+    <munit:test name="get:/exchangeLimit:api-config-200-application/json-FlowTest" description="Verifying functionality of [get:/exchangeLimit:api-config-200-application/json]">
+        <set-variable variableName="start" value="#['0']" doc:name="start" />
+        <set-variable variableName="limit" value="#['1']" doc:name="limit" />
+        <http:request config-ref="HTTP_Request_Configuration1" method="GET" path="/exchangeLimit" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+                <http:query-param paramName="start" value="#[flowVars['start']]" />
+                <http:query-param paramName="limit" value="#[flowVars['limit']]" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
+
+    </munit:test>
+    <munit:test name="get:/exchangeRate:api-config-200-application/json-FlowTest" description="Verifying functionality of [get:/exchangeRate:api-config-200-application/json]">
+        <set-variable variableName="numberOfCoin" value="#['1']" doc:name="numberOfCoin" />
+        <set-variable variableName="id" value="#['bitcoin']" doc:name="id" />
+        <http:request config-ref="HTTP_Request_Configuration1" method="GET" path="/exchangeRate" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+                <http:query-param paramName="numberOfCoin" value="#[flowVars['numberOfCoin']]" />
+                <http:query-param paramName="id" value="#[flowVars['id']]" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
+
+    </munit:test>
+    <munit:test name="get:/global:api-config-200-application/json-FlowTest" description="Verifying functionality of [get:/global:api-config-200-application/json]">
+        <http:request config-ref="HTTP_Request_Configuration1" method="GET" path="/global" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
+
+    </munit:test>
+    <munit:test name="get:/listOfCoins:api-config-200-application/json-FlowTest" description="Verifying functionality of [get:/listOfCoins:api-config-200-application/json]">
+        <http:request config-ref="HTTP_Request_Configuration1" method="GET" path="/listOfCoins" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json" />
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(200))]" doc:name="assert that - http.status eq 200" />
+
+    </munit:test>
+    
+    <munit:test name="post:/order:application/json:api-config-201-application/json-FlowTest" description="Verifying functionality of [post:/order:application/json:api-config-201-application/json]">
+        <set-payload value="#[getResource('scaffolder/request/post_order_application_json.json').asString()]" doc:name="Set Payload"/>
+        <http:request config-ref="HTTP_Request_Configuration1" method="POST" path="/order" doc:name="HTTP">
+            <http:request-builder>
+                <http:header headerName="Accept" value="application/json"/>
+                <http:header headerName="Content-Type" value="application/json"/>
+
+            </http:request-builder>
+        </http:request>
+        <object-to-string-transformer doc:name="http response to string" />
+        <munit:assert-true message="The HTTP Status code is not correct!" condition="#[messageInboundProperty('http.status').is(eq(201))]" doc:name="assert that - http.status eq 201" />
+        <object-to-string-transformer doc:name="Object to String"/>
+
+    </munit:test>
+    
+</mule>
+
+
+
+

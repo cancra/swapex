@@ -1,0 +1,161 @@
+#%RAML 1.0
+title: ceexchange
+version: v1
+baseUri: http://api.ce-exchange.com/0.1
+
+securitySchemes:
+  basic:
+    description: |
+      This API supports Basic Authentication.
+    type: Basic Authentication
+
+traits: 
+  responseMessage200: !include Traits/responseMessage200.raml
+    
+
+/exchangeRate:
+ description: |
+   Retrive a specific crypto currency exchange value based on coin value input by user
+ get:
+  description: |
+    Get currency exchange rate
+  responses: 
+    200:
+     body: 
+       application/json:          
+        example: !include Examples_JSON/exchangerate.json      
+          
+  queryParameters:
+   id:
+    displayName: id
+    type: string
+    description: |
+      Crypto currency name
+    example: bitcoin
+    required: true
+ 
+/exchange:
+ description: |
+   Provide the information on ID, Name, Price, MarketCap and Percentage change in 24 hours of top 10 Crypto Currencies
+ get:
+  responses: 
+    200:
+      description: |
+        Get JSON response for property - ID, Name, Price, MarketCap and Percentage change in 24 hours of top 10 Crypto Currencies
+      body: 
+        application/json:
+         example: !include Examples_JSON/exchangeJSON.json
+         
+/global:
+ description: |
+  Provide Global Data in AUD
+ get:
+  responses:
+    200:
+      description: |
+       GET JSON respinse for Global Data in AUD
+      body:
+        application/json:
+         example: !include Examples_JSON/global.json
+
+/buyOrder:
+ description: |
+   Receive and process customer orders
+ post: 
+  body: 
+    application/json:
+  responses: 
+    201:
+      description: |
+        Create and Process Order
+      body: 
+        application/json:
+          example: !include Examples_JSON/order.json
+
+/sellOrder:
+ description: |
+   Receive and process customer orders
+ post:
+  body: 
+    application/json:
+  responses: 
+    201:
+      description: |
+        Create and Process Order
+      body: 
+        application/json:
+          example: !include Examples_JSON/order.json
+
+/sellMatch:
+ description: |
+   Receive and process customer orders
+ post:
+  body: 
+    application/json:
+  responses: 
+    201:
+      description: |
+        Create and Process Order
+      body: 
+        application/json:
+          
+/buySellRate:
+ description: |
+   Provide a buy or sell exchange rate of specific coin
+ get:
+  description: |
+   buy and sell rate from multiple exchange for different currencies 
+  responses:  
+    200:
+     body: 
+       application/json:          
+        example: !include Examples_JSON/buysell.json
+  queryParameters: 
+     coinname:
+      displayName: Coinname
+      type: string
+      description: |  
+       Crypto Currency Name based on First Exchange (Coin Market Cap)
+      enum: [ethereum, bitcoin, litecoin]
+      example: bitcoin
+      required: true
+     eprice:
+      displayName: ePrice
+      description: |
+       Buy rate or Sell rate based on selection
+      enum: [max , min]
+      example: max
+      required: true
+
+
+/thirdPartyURI:
+ description: |
+   Provide a URI of different exchanges
+ get:
+  description: |
+   Gives you the URI of integrated exchanges 
+  responses:  
+    200:
+     body: 
+       application/json:          
+  queryParameters: 
+     coinuri:
+      displayName: coinuri
+      type: string
+      description: |  
+       Crypto Currency Name based on First Exchange (Coin Market Cap)
+      enum: [bitcoin, ethereum, litecoin]
+      example: bitcoin
+      required: true
+
+
+
+
+
+
+
+
+
+
+
+

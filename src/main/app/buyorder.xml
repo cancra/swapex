@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jbossts="http://www.mulesoft.org/schema/mule/jbossts" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/jbossts http://www.mulesoft.org/schema/mule/jbossts/current/mule-jbossts.xsd">
+	<objectstore:config name="ObjectStore__Connector"
+		partition="tradingengine" persistent="true" doc:name="ObjectStore: Connector" />
+    <jms:activemq-connector name="Active_MQ1" specification="1.1" username="${activemq.username}" password="${activemq.password}" brokerURL="tcp://${activemq.host}:${activemq.port}" validateConnections="true" doc:name="Active MQ"/>
+	
+	<flow name="buyorderFlow" processingStrategy="synchronous">
+        
+          <jms:inbound-endpoint queue="BuyOrderQueue" connector-ref="Active_MQ_Consumer" doc:name="JMS: BuyOrderQueue Consumer"/>
+		<json:json-to-object-transformer
+			returnClass="java.lang.Object" doc:name="JSON to Object" />
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <enricher source="#[payload]" target="#[flowVars.EnricherPrice]" doc:name="Message Enricher">
+            <flow-ref name="buypriceSub_Flow" doc:name="Flow Reference"/>
+        </enricher>
+        <logger message="------------#[flowVars.EnricherPrice.price]" level="INFO" doc:name="Logger"/>
+        <set-variable variableName="price" value="#[flowVars.EnricherPrice.price]" doc:name="Variable: price"/>
+		<logger message="Ask Quantity ---#[payload.quantity]-------------Ask Price ----------#[flowVars.EnricherPrice.price]" level="INFO" doc:name="Logger: Ask Quantity and Ask Price" />
+		<enricher source="#[payload]" target="#[flowVars.ReserveCheck]"
+			doc:name="Message Enricher">
+            <db:select config-ref="Oracle_Configuration" doc:name="Database">
+                <db:parameterized-query><![CDATA[select * from reserved_pool where COINNAME = #[payload.coinname]]]></db:parameterized-query>
+            </db:select>
+		</enricher>
+		<logger
+			message="Buy Order----#[flowVars.EnricherPrice.price]-------Reserve Pool Price --- #[flowVars.ReserveCheck[0].RESERVED_POOL_PRICE]--------- Reserved Pool Quantity #[flowVars.ReserveCheck[0].AVAILABLEQUANTITY]"
+			level="INFO" doc:name="Logger" />
+		<choice doc:name="Choice">
+			<when
+				expression="#[flowVars.EnricherPrice.price &gt;= flowVars.ReserveCheck[0].RESERVED_POOL_PRICE &amp;&amp; flowVars.ReserveCheck[0].AVAILABLEQUANTITY &gt;= payload.quantity]">
+				<logger
+					message="Buy Price is Greater than Buy Price in Reserved Pool----Quantity Available in Reserved Pool #[payload]"
+					level="INFO" doc:name="Logger: Reserved Pool" />
+                <flow-ref name="reservedPoolSub_Flow" doc:name="reservedPoolSub_Flow"/>
+
+			</when>
+			<when
+				expression="#[flowVars.EnricherPrice.price &lt; flowVars.ReserveCheck[0].RESERVED_POOL_PRICE]">
+				<logger
+					message="Buy Price is Less than Price in Reserved Pool---&gt;&gt; Checking in Sell Order Pool #[payload]"
+					level="INFO" doc:name="Logger" />
+				<flow-ref name="buyorderSub_Flow" doc:name="buyorderSub_Flow" />
+			</when>
+            <when expression="#[flowVars.EnricherPrice.price &gt;= flowVars.ReserveCheck[0].RESERVED_POOL_PRICE &amp;&amp; flowVars.ReserveCheck[0].AVAILABLEQUANTITY &lt; payload.quantity]">
+                <logger message="Price is Greater than reserved pool price but Buy Order Quantity is Not Available" level="INFO" doc:name="Logger"/>
+            </when>
+			<otherwise>
+				<logger message="Default Logger(First Choice)---- No matching price found for Order" level="INFO" doc:name="Logger" />
+			</otherwise>
+		</choice>
+        <flow-ref name="responseSub_Flow" doc:name="responseSub_Flow"/>
+	</flow>
+    <sub-flow name="reservedPoolSub_Flow">
+        <set-variable variableName="ReservedBalanceQuantity" value="#[flowVars.ReserveCheck[0].AVAILABLEQUANTITY-( payload.quantity)]" doc:name="Variable"/>
+        <set-variable variableName="NetProfit" value="#[(flowVars.EnricherPrice.price - flowVars.ReserveCheck[0].RESERVED_POOL_PRICE)* message.payload.quantity]" doc:name="Variable: Net"/>
+        <enricher target="#[flowVars.DBFlagReservePool]" doc:name="Message Enricher">
+            <db:bulk-execute config-ref="Oracle_Configuration" doc:name="Database"><![CDATA[update reserved_pool set AVAILABLEQUANTITY = #[flowVars.ReservedBalanceQuantity] where COINNAME ='#[payload.coinname]';
+
+INSERT INTO AUDIT_PROFIT (ORIGINAL_TRANSACTION,SETTLED_TRANSACTION,NETPROFIT, Time_Stamp) VALUES ('#[message.payload.transactionID]', 'NA', #[flowVars.NetProfit], CURRENT_TIMESTAMP)
+
+]]></db:bulk-execute>
+        </enricher>
+        <logger message="Balance After Reserved Pool Deduction #[flowVars.ReservedBalanceQuantity]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.ReserveCheck[0].AVAILABLEQUANTITY  &gt; flowVars.ReserveCheck[0].RESERVE_QUANTITY_THRESHOLD]">
+                <logger message="#[payload]------------- Sending the details to BTC-Transaction---------------------" level="INFO" doc:name="Logger"/>
+                <flow-ref name="btctransactionSub_Flow" doc:name="btctransactionSub_Flow"/>
+            </when>
+            <when expression="#[flowVars.ReserveCheck[0].AVAILABLEQUANTITY  &lt;= flowVars.ReserveCheck[0].RESERVE_QUANTITY_THRESHOLD]">
+                <logger message="#[payload]" level="INFO" doc:name="Logger: Threshold Reached"/>
+                <flow-ref name="SMTPSub_Flow" doc:name="SMTPSub_Flow"/>
+                <flow-ref name="btctransactionSub_Flow" doc:name="btctransactionSub_Flow"/>
+            </when>
+            <otherwise>
+                <logger message="Default Logger of Completed Reserve Pool" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+	<sub-flow name="buyorderSub_Flow">
+		<enricher target="#[flowVars.SellCheck]" doc:name="Message Enricher">
+			<db:select config-ref="Oracle_Configuration" doc:name="Database">
+                <db:parameterized-query><![CDATA[select * from SELL_ORDER where COINNAME = #[payload.coinname] and sellstatus != 'Close']]></db:parameterized-query>
+			</db:select>
+		</enricher>
+        <logger message="#[flowVars.SellCheck]------------#[payload]" level="INFO" doc:name="Logger"/>
+		<enricher target="#[flowVars.SellCheckJson]" doc:name="Message Enricher">
+			<expression-transformer
+				expression="#[new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(flowVars.SellCheck)]"
+				doc:name="Expression" />
+		</enricher>
+		<logger
+			message="--------------------------- Message ----------------------------- Order ----#[flowVars.SellCheckJson] ------ #[payload]---------------#[flowVars.SellCheck]"
+			level="INFO" doc:name="Logger" />
+		<custom-transformer class="ceexchange.ProcessSellOrders"
+			doc:name="Java" />
+		<logger
+			message="Before Choice-----Payload: #[payload]---------Flag Variable: #[flowVars.flagVariable]---------Partial Variable:#[flowVars.PartialMap]---------Sell Status Variable:#[flowVars.sellStatus]---------Original Message Variable: #[flowVars.OriginalMessage]-----RemainingQuantity Variable: #[flowVars.RemainingQuantity]"
+			level="INFO" doc:name="Logger" />
+		<choice doc:name="Choice">
+			<when expression="#[flowVars.sellStatus=='CLOSED' &amp;&amp; flowVars.flagVariable== true]">
+				<logger message="Completely Matched Order #[payload]----------------- #[flowVars.OriginalMessage]------------ #[flowVars.Netprofit]"
+					level="INFO" doc:name="Logger: True Complete the transaction with Sell Orders" />
+                <flow-ref name="netProfit_Sub_Flow" doc:name="netProfit_Sub_Flow"/>
+
+				<logger message="Full Transaction Completed on Sell Order #[payload]" level="INFO" doc:name="Logger" />
+
+			</when>
+			<when expression="#[flowVars.sellStatus=='THIRDPARTY' &amp;&amp; flowVars.flagVariable== false]">
+				<logger message="Into Third Party Transaction for Partial Deduction followed by Third Party Transaction----------------#[payload]------------- #[flowVars.Netprofit]"
+					level="INFO"
+					doc:name="Logger: Redirect to Third Party API for Remaining Transaction" />
+                <flow-ref name="netProfit_Sub_Flow" doc:name="netProfit_Sub_Flow"/>
+                <logger message="Order for Third Party Exchange -----#[payload]" level="INFO" doc:name="Logger: Third Party Order"/>
+                
+                <set-payload value="#[[ 'transactionID' : payload.transactionID, 'quantity': flowVars.thridPartyQunatity, 'coinname': payload.coinname , 'userid': payload.userid]]" doc:name="Set Payload" />
+
+                <jms:outbound-endpoint queue="ThirdPartyOrderQueue" connector-ref="Active_MQ_Consumer" doc:name="JMS"/>
+			</when>
+            <when expression="#[flowVars.sellStatus=='Partial']">
+                <logger message="Partial Deduction and Settled witin Sell Order------------- with transaction id written in MAP---#[flowVars.PartialMap]------------- and-------- CompletedOrder--- #[flowVars.OriginalMessage]---------- Net Profit #[flowVars.Netprofit]" level="INFO" doc:name="Logger: Partial Settlement with Third Party and Completed Settlement"/>
+                <flow-ref name="netProfit_Sub_Flow" doc:name="netProfit_Sub_Flow"/>
+
+                <logger message="#[payload]------------ #[flowVars.PartialMap.partialTransactionQuantity]------------- SELLTRANSACTIONID--- #[flowVars.PartialMap.partialTransactionID]------------- ThridPartyQunatity: #[flowVars.thridPartyQunatity]" level="INFO" doc:name="Logger"/>
+                <logger message="#[flowVars.PartialNetprofit]-------------Original TransactionID #[payload.transactionID]" level="INFO" doc:name="Logger"/>
+                
+                <db:bulk-execute config-ref="Oracle_Configuration" doc:name="Database"><![CDATA[update Sell_Order set SELLSTATUS = 'Partial', QUANTITY = #[flowVars.PartialMap.partialTransactionQuantity] 
+where SELLTRANSACTIONID ='#[flowVars.PartialMap.partialTransactionID]';
+
+INSERT INTO audit_profit  (ORIGINAL_TRANSACTION,SETTLED_TRANSACTION,NETPROFIT, Time_Stamp)  VALUES  ('#[flowVars.PartialMap.partialTransactionID]', '#[payload.transactionID]', #[flowVars.PartialNetprofit], CURRENT_TIMESTAMP)
+]]>
+                </db:bulk-execute>
+                <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+            </when>
+			<otherwise>
+				<logger message="Default Logger----------Second Choice---- No matching price found for Order------- May Send the order to Third Party" level="INFO" doc:name="Logger" />
+			</otherwise>
+		</choice>
+
+	</sub-flow>
+    <sub-flow name="netProfit_Sub_Flow">
+        <enricher source="#[flowVars.OriginalMessage]" target="#[flowVars.Enricher1]" doc:name="Message Enricher">
+            <foreach collection="#[flowVars.OriginalMessage]" rootMessageVariableName="rootOrigMessage" doc:name="For Each">
+                <db:bulk-execute config-ref="Oracle_Configuration" doc:name="Database"><![CDATA[update Sell_Order set SELLSTATUS = 'Close', QUANTITY = 0 where SellTransactionId ='#[payload]']]></db:bulk-execute>
+            </foreach>
+        </enricher>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.Netprofit!=null]">
+                <enricher target="#[flowVars.netProfitEnricher]" doc:name="Message Enricher">
+                    <foreach collection="#[flowVars.Netprofit.entrySet()]" doc:name="For Each">
+                        <logger message="#[payload]-------------------------------------  #[message.payload.key] ----#[message.payload.value]" level="INFO" doc:name="Logger"/>
+                        <db:bulk-execute config-ref="Oracle_Configuration" doc:name="Database"><![CDATA[INSERT INTO audit_profit  (ORIGINAL_TRANSACTION,SETTLED_TRANSACTION,NETPROFIT, Time_Stamp)  VALUES  ('#[message.payload.key]', '#[flowVars.rootMessage.originalPayload.transactionID]' ,#[message.payload.value], CURRENT_TIMESTAMP)]]></db:bulk-execute>
+                    </foreach>
+                </enricher>
+            </when>
+            <otherwise>
+                <logger message="-----------flowVarsNetprofit is NULL As there is No Matching Sell Order at this time----------" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+    <sub-flow name="responseSub_Flow">
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+       <message-properties-transformer
+			doc:name="Message Properties">
+			<add-message-property key="Content-Type" value="application/json" />
+            <add-message-property key="Access-Control-Allow-Credentials" value="true"/>
+            <add-message-property key="Access-Control-Allow-Headers" value="Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Allow-Credentials"/>
+            <add-message-property key="Access-Control-Allow-Methods" value="PUT, GET, POST, DELETE, OPTIONS"/>
+            <add-message-property key="Access-Control-Allow-Origin" value="*"/>
+		</message-properties-transformer>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+    </sub-flow>
+    <sub-flow name="buypriceSub_Flow">
+        <set-payload value="#[['coinname': payload.coinname, 'eprice': 'min']]" doc:name="Set Payload"/>
+        <flow-ref name="buySellRateSub_Flow" doc:name="Flow Reference"/>
+        <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
+
+    </sub-flow>
+
+   
+
+</mule>

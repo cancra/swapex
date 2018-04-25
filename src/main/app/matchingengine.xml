@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+    <flow name="matchingengineFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/uuid" allowedMethods="GET" doc:name="HTTP"/>
+        <set-payload value="#[java.util.UUID.randomUUID()]" doc:name="Set Payload"/>
+        <logger level="INFO" doc:name="Logger" message="#[payload]"/>
+    </flow>
+    <flow name="matchingengineFlow1">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/bugtest" allowedMethods="GET" doc:name="HTTP"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <db:select config-ref="Oracle_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[select * from SELL_ORDER where COINNAME = 'Ripple']]></db:parameterized-query>
+        </db:select>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>

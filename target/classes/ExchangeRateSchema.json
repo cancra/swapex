@@ -1,0 +1,28 @@
+
+
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "items": [
+    {
+      "type": "object",
+      "properties": {
+        "TransactionID": {
+          "type": "integer"
+        },
+        "CoinName": {
+          "type": "string"
+        },
+        "Quantity": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "TransactionID",
+        "CoinName",
+        "Quantity"
+      ]
+    }
+  ]
+}
+

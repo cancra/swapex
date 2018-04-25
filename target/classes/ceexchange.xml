@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+    <http:request-config name="HTTP_Request_Configuration_acx" protocol="HTTPS" host="acx.io" port="443" basePath="/api/v2/tickers" doc:name="HTTP Request Configuration"/>
+    <http:request-config name="HTTP_Request_Configuration_IR" protocol="HTTPS" host="api.independentreserve.com" port="443" basePath="Public/" doc:name="HTTP Request Configuration"/>
+    <http:request-config name="HTTP_Request_Configuration2" protocol="HTTPS" host="bittrex.com" port="443" basePath="/api/v1.1/public/getticker" doc:name="HTTP Request Configuration"/>
+    <http:request-config name="HTTP_Request_ConfigurationUSDtoAUD" host="mycurrency.net" port="80" doc:name="HTTP Request Configuration"/>
+    <http:request-config name="HTTP_Request_Configuration3" protocol="HTTPS" host="bittrex.com" port="443" basePath="api/v1.1/public" doc:name="HTTP Request Configuration"/>
+
+	<flow name="ceexchangeFlow">
+		<http:request config-ref="HTTP_Request_Configuration"
+			path="/?convert=AUD&amp;limit=10" method="GET" doc:name="HTTP" />
+		<json:json-to-object-transformer
+			returnClass="java.util.List" doc:name="JSON to Object" />
+		<collection-splitter enableCorrelation="ALWAYS"
+			doc:name="Collection Splitter" />
+		<set-payload
+			value="#[[  'id': payload.id,  'name' : payload.name, 'symbol' : payload.symbol, 'rank' : payload.rank,  'price' : payload.price_aud,  'marketCap' : payload.market_cap_aud,  'percentageChange' : payload.percent_change_24h]]"
+			doc:name="Set Payload" />
+		<collection-aggregator timeout="6000"
+			failOnTimeout="false" doc:name="Collection Aggregator" />
+		<flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow" />
+	</flow>
+    <flow name="buySellRateFlow">
+        <set-variable variableName="coinname" value="#[message.inboundProperties.'http.query.params'.coinname]" doc:name="Variable"/>
+        <set-variable variableName="eprice" value="#[message.inboundProperties.'http.query.params'.eprice]" doc:name="Variable"/>
+        <set-payload value="#[['coinname': flowVars.coinname, 'eprice': flowVars.eprice ]]" doc:name="Set Payload"/>
+        <flow-ref name="buySellRateSub_Flow" doc:name="Flow Reference"/>
+        
+      <!--   <choice doc:name="Choice: High/Low Price">
+            <when expression="#[message.payload[0]&gt;message.payload[1]]">
+                <set-payload value="#[message.payload[0]]" doc:name="Set Payload"/>
+            </when>
+            <when expression="#[message.payload[0]&lt;message.payload[1]]">
+                <set-payload value="#[message.payload[1]]" doc:name="Set Payload"/>
+            </when>
+            <otherwise>
+                <set-payload value="Inside default" doc:name="Set Payload"/>
+            </otherwise>
+        </choice> -->
+    </flow>
+    <sub-flow name="buySellRateSub_Flow">
+        <set-variable variableName="BuySell" value="#[payload.eprice]" doc:name="Variable"/>
+        <db:select config-ref="Oracle_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[select * from THIRDPARTYEXCHANGEURI where COINNAME = #[payload.coinname]]]></db:parameterized-query>
+        </db:select>
+        <logger message=" #[payload]" level="INFO" doc:name="Logger"/>
+        <scatter-gather doc:name="Scatter-Gather">
+            <processor-chain>
+                <http:request config-ref="HTTP_Request_Configuration" path="{id}/?convert=AUD" method="GET" doc:name="HTTP: Coin Market Cap">
+                    <http:request-builder>
+                        <http:uri-param paramName="id" value="#[payload[0].coinmarketcap]"/>
+                    </http:request-builder>
+                </http:request>
+                <json:json-to-object-transformer returnClass="java.util.List" doc:name="JSON to Object"/>
+                <set-variable variableName="CoinMarketCapValue" value="#[message.payload[0].price_aud]" doc:name="Variable: CoinMarketCapValue"/>
+                <set-payload value="#[['Exchange' : 'CoinMarketCap', 'Price' : flowVars.CoinMarketCapValue]]" mimeType="application/java" doc:name="Set Payload"/>
+            </processor-chain>
+            <processor-chain>
+                <http:request config-ref="HTTP_Request_Configuration_acx" path="/{id2}.json" method="GET" doc:name="HTTP: ACX">
+                    <http:request-builder>
+                        <http:uri-param paramName="id2" value="#[payload[0].acx]"/>
+                    </http:request-builder>
+                </http:request>
+                <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
+                <set-variable variableName="ACXValue" value="#[message.payload.ticker.buy]" doc:name="Variable: ACX"/>
+                <set-payload value="#[['Exchange' : 'ACX', 'Price' :flowVars.ACXValue]]" mimeType="application/java" doc:name="Set Payload"/>
+            </processor-chain>
+            <processor-chain>
+                <http:request config-ref="HTTP_Request_Configuration3" path="getticker?market={id3}" method="GET" doc:name="HTTP: Bittrex">
+                    <http:request-builder>
+                        <http:uri-param paramName="id3" value="#[payload[0].bittrex]"/>
+                    </http:request-builder>
+                </http:request>
+                <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
+                <enricher target="#[flowVars.usdaud]" doc:name="Message Enricher">
+                    <flow-ref name="usdtoaudConversionSub_Flow" doc:name="Flow Reference"/>
+                </enricher>
+                <set-payload value="#[['Exchange' : 'Bittrex','Price' : (message.payload.result.Bid * flowVars.usdaud[0]).toString()]]" doc:name="Set Payload"/>
+            </processor-chain>
+        </scatter-gather>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <custom-transformer class="ceexchange.MinMaxPrice" doc:name="Java: MinMax"/>
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="JSON to Object"/>
+        <set-payload value="#[['exchange': payload.Exchange,'price': payload.Price, 'currency': 'AUD', 'type': flowVars.BuySell ]]" doc:name="Set Payload"/>
+        <flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow"/>
+    </sub-flow>
+
+	<flow name="ceexchangeRateFlow">
+		<http:request config-ref="HTTP_Request_Configuration"
+			path="{id}/?convert=AUD" method="GET" doc:name="HTTP">
+			<http:request-builder>
+                <http:uri-param paramName="id" value="#[message.inboundProperties.'http.query.params'.id]"/>
+			</http:request-builder>
+		</http:request>
+		<json:json-to-object-transformer
+			returnClass="java.util.List" doc:name="JSON to Object" />
+		<set-payload
+			value="#[[ 'exchangeRate': payload[0].price_aud, 'currency': 'AUD' ]]"
+			doc:name="Set Payload" />
+		<flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow" />
+	</flow>
+
+	<flow name="ceexchangeGlobalDataFlow">
+		<http:request config-ref="HTTP_Request_Configuration_GlobalData"
+			path="/?convert=AUD" method="GET" doc:name="HTTP" />
+		<flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow" />
+	</flow>
+
+	<flow name="ceexchangeLimitFlow">
+		<http:request config-ref="HTTP_Request_Configuration"
+			path="/?convert=AUD&amp;start={start}&amp;limit={limit}" method="GET"
+			doc:name="HTTP">
+			<http:request-builder>
+                <http:uri-param paramName="start" value="#[message.inboundProperties.'http.query.params'.start]"/>
+                <http:uri-param paramName="limit" value="#[message.inboundProperties.'http.query.params'.limit]"/>
+			</http:request-builder>
+		</http:request>
+		<flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow" />
+	</flow>
+
+	<flow name="cecurrencyInfoFlow">
+		<http:request config-ref="HTTP_Request_Configuration"
+			path="{id}/?convert=AUD" method="GET" doc:name="HTTP">
+			<http:request-builder>
+                <http:uri-param paramName="id" value="#[message.inboundProperties.'http.query.params'.id]"/>
+			</http:request-builder>
+		</http:request>
+		<flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow" />
+	</flow>
+    <flow name="thirdPartyURIFlow">
+       
+        <flow-ref name="ceexchangeResponseSub_Flow" doc:name="Flow Reference"/>
+    </flow>
+
+	<flow name="cecurrencyInfoSymbolFlow">
+		<set-variable variableName="sym"
+			value="#[message.inboundProperties.'http.query.params'.sym]"
+			doc:name="Variable" />
+        <logger message="#[flowVars.sym]" level="INFO" doc:name="Logger"/>
+		<http:request config-ref="HTTP_Request_Configuration"
+			path="/?convert=AUD" method="GET" doc:name="HTTP" />
+		<custom-transformer class="ceexchange.Symbol"
+			doc:name="Java" />
+		<logger message="#[payload]" level="INFO" doc:name="Logger" />
+		<message-properties-transformer
+			doc:name="Message Properties">
+			<add-message-property key="Content-Type" value="application/json" />
+		</message-properties-transformer>
+		<json:object-to-json-transformer
+			doc:name="Object to JSON" />
+	</flow>
+    <sub-flow name="usdtoaudConversionSub_Flow">
+        <http:request config-ref="HTTP_Request_ConfigurationUSDtoAUD" path="/service/rates" method="GET" doc:name="HTTP"/>
+        <custom-transformer class="ceexchange.UsdToAud" doc:name="Java"/>
+    </sub-flow>
+
+	<sub-flow name="ceexchangeResponseSub_Flow">
+		<logger message="#[payload]" level="INFO" doc:name="Logger" />
+		<message-properties-transformer
+			doc:name="Message Properties">
+			<add-message-property key="Content-Type" value="application/json" />
+            <add-message-property key="Access-Control-Allow-Credentials" value="true"/>
+            <add-message-property key="Access-Control-Allow-Headers" value="Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Allow-Credentials"/>
+            <add-message-property key="Access-Control-Allow-Methods" value="PUT, GET, POST, DELETE, OPTIONS"/>
+            <add-message-property key="Access-Control-Allow-Origin" value="*"/>
+		</message-properties-transformer>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+	</sub-flow>
+
+</mule>
+

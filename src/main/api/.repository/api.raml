@@ -1,0 +1,246 @@
+#%RAML 1.0
+title: ceexchange
+version: v1
+baseUri: https://mocksvc.mulesoft.com/mocks/eccd7d76-af39-4371-af4d-f4477ae23beb/0.1 # baseUri: http://api.ce-exchange.com/0.1
+
+securitySchemes:
+  basic:
+    description: |
+      This API supports Basic Authentication.
+    type: Basic Authentication
+
+traits: 
+  responseMessage200: !include Traits/responseMessage200.raml
+    
+
+/exchangeRate:
+ description: |
+   Retrive a specific crypto currency exchange value based on coin value input by user
+ get:
+  description: |
+    Get currency exchange rate
+  securedBy: [basic]
+  responses: 
+    200:
+     body: 
+       application/json:          
+        example: !include Examples_JSON/exchangerate.json      
+          
+  queryParameters:
+   id:
+    displayName: id
+    type: string
+    description: |
+      Crypto currency name
+    example: bitcoin
+    required: true
+   numberOfCoin:
+    displayName: numberOfCoin
+    type: number
+    description: |
+      Number of Coins in whole number or in decimal 
+    example: 1
+    required: true
+ 
+/exchange:
+ description: |
+   Provide the information on ID, Name, Price, MarketCap and Percentage change in 24 hours of top 4 Crypto Currencies
+ get:
+  securedBy: [basic]
+  responses: 
+    200:
+      description: |
+        Get JSON response for property - ID, Name, Price, MarketCap and Percentage change in 24 hours of top 4 Crypto Currencies
+      body: 
+        application/json:
+         example: !include Examples_JSON/exchangeJSON.json
+/global:
+ description: |
+  Provide Global Data in AUD
+ get:
+  securedBy: [basic]
+  responses:
+    200:
+      description: |
+       GET JSON respinse for Global Data in AUD
+      body:
+        application/json:
+         example: !include Examples_JSON/global.json
+/exchangeLimit:
+ description: |
+   Provide the information on ID, Name, Price, MarketCap and Percentage change in 24 hours etc  of Crypto Currencies within limits provided as input
+ get:
+  description: |
+    Get crypto currencies detail
+  securedBy: [basic]
+  responses: 
+    200:
+     body: 
+       application/json:          
+        example: !include Examples_JSON/currencyInfo.json        
+  queryParameters:
+   start:
+    displayName: start
+    type: number
+    description: |
+      starting limit of crypto currency based on coin ranking 
+    example: 0
+    required: true
+   limit:
+    displayName: limit
+    type: number
+    description: |
+      limit of crypto currency based on coin ranking 
+    example: 1
+    required: true
+/currencyInfo:
+ description: |
+   Retrive a specific crypto currency information
+ get:
+  description: |
+    Get crypto currency information
+  securedBy: [basic]
+  responses: 
+    200:
+     body: 
+       application/json:          
+        example: !include Examples_JSON/currencyInfo.json        
+  queryParameters:
+   id:
+    displayName: id
+    type: string
+    description: |
+      Crypto currency name
+    example: bitcoin
+    required: true
+/listOfCoins:
+ description: |
+   Provide the information on number of Crypto Currencies available
+ get:
+  securedBy: [basic]
+  responses: 
+    200:
+      description: |
+        Get JSON response for list of Crypto Currencies available
+      body: 
+        application/json:
+         example: !include Examples_JSON/coinName.json
+/coinInfoBySymbol:
+ description: |
+   Provide the information of Crypto Currencies available based on input symbol by user
+ get:
+  securedBy: [basic]
+  responses: 
+    200:
+      description: |
+        Get JSON response of Currency detail
+      body: 
+        application/json:
+         example: !include Examples_JSON/currencyInfo.json
+  queryParameters:
+   sym:
+    displayName: sym
+    type: string
+    description: |    
+      Crypto currency Symbol
+    enum: [ETH, BTC, LTC, DOGE]    
+    example: ETH
+    required: true
+
+/order:
+ description: |
+   Receive and process customer orders
+ post:
+  securedBy: [basic]
+  body: 
+    application/json:
+     schema:  | 
+      {
+       "$schema": "http://json-schema.org/draft-04/schema#",
+       "type": "array",
+       "items": 
+        [
+          {
+           "type": "object",
+           "properties": 
+           {
+            "Message": 
+            {
+              "type": "integer"
+            },
+             "Title Message": 
+            {
+            "type": "string"
+            },
+             "Album": 
+            {
+            "type": "string"
+            }
+           },
+          "required": 
+         [
+           "Message",
+           "Title Message",
+           "Album"
+         ]
+          }
+        ]
+      }
+  responses: 
+    201:
+      description: |
+        Create and Process Order
+      body: 
+        application/json:
+          example: !include Examples_JSON/order.json
+
+/buysellrate:
+ description: |
+   Provide a buy or sell exchange rate of specific coin
+ get:
+  description: |
+   buy and sell rate from multiple exchange for different currencies 
+  securedBy: [basic]
+  responses:  
+    200:
+     body: 
+       application/json:          
+        example: !include Examples_JSON/buysell.json
+  queryParameters: 
+     id:
+      displayName: Id
+      type: string
+      description: |  
+       Crypto Currency Name based on First Exchange (Coin Market Cap)
+      enum: [ethereum, bitcoin, litecoin, dogecoin]
+      example: bitcoin
+      required: true
+     id2:
+      displayName: Id2
+      description: |
+       Crypto Currency value based on Second Exchange (ACX)
+      enum: [ethaud, btcaud, ltcaud, dogeaud]
+      example: btcaud
+      required:  true
+     buysell:
+      displayName: BuySell
+      description: |
+       Buy rate or Sell rate based on selection
+      enum: [max , min]
+      example: max
+      required: true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

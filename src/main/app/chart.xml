@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd">
+    <http:request-config name="HTTP_Request_Configuration_Chart" host="marketdata.wavesplatform.com" port="80" basePath="api/candles/WAVES/" doc:name="HTTP Request Configuration"/>
+    <http:request-config name="HTTP_Request_Configuration_Candle_Chart" protocol="HTTPS" host="api.bitfinex.com" port="443" basePath="/v2/candles" doc:name="HTTP Request Configuration"/>
+    <flow name="chartFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/chart" allowedMethods="GET" doc:name="HTTP"/>
+        <http:request config-ref="HTTP_Request_Configuration_Chart" path="BTC/1440/1512345600000/1513209600000" method="GET" doc:name="HTTP: marketdata.wavesplatform.com"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <custom-transformer class="ceexchange.ChartFilter" doc:name="Java"/>
+        <logger message="--&gt;#[payload]" level="INFO" doc:name="Logger"/>
+               <object-to-string-transformer doc:name="Object to String"/>
+        <set-property propertyName="Content-Type" value="text/html" doc:name="Content Type"/>
+    </flow>
+    <flow name="candlechartFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/candlechart" allowedMethods="GET" doc:name="HTTP"/>
+        <http:request config-ref="HTTP_Request_Configuration_Candle_Chart" path="trade:{timeframe}:{conversion}/hist?start={start}&amp;end={end}" method="GET" doc:name="HTTP: Bitfinex API">
+            <http:request-builder>
+                <http:uri-param paramName="timeframe" value="#[message.inboundProperties.'http.query.params'.timeframe]"/>
+                <http:uri-param paramName="conversion" value="#[message.inboundProperties.'http.query.params'.conversion]"/>
+                <http:uri-param paramName="start" value="#[message.inboundProperties.'http.query.params'.start]"/>
+                <http:uri-param paramName="end" value="#[message.inboundProperties.'http.query.params'.end]"/>
+            </http:request-builder>
+        </http:request>
+
+        <logger message="#[payload.toString()]" level="INFO" doc:name="Logger"/>
+               <object-to-string-transformer doc:name="Object to String" returnClass="java.util.List"/>
+        <message-properties-transformer doc:name="Message Properties">
+            <add-message-property key="Content-Type" value="application/json"/>
+        </message-properties-transformer>
+
+    </flow>
+
+
+</mule>
