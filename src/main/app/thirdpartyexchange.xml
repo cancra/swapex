@@ -15,14 +15,11 @@ http://www.springframework.org/schema/beans http://www.springframework.org/schem
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
-    <flow name="thirdpartyexchangeFlow">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP" allowedMethods="GET"/>
-        <logger level="INFO" doc:name="Logger"/>
-    </flow>
-    <sub-flow name="thirdpartyexchangeSub_Flow">
+    <flow name="thirdpartyexchangeFlow" processingStrategy="synchronous">
+        <jms:inbound-endpoint doc:name="JMS" connector-ref="Active_MQ_Consumer" queue="ThirdPartyOrderQueue"/>
         <logger message="Consumer Logger --------------&gt;&gt;&gt;  #[payload]" level="INFO" doc:name="Logger"/>
         <set-variable variableName="JMSOriginalOrder" value="#[['quantity': payload.quantity, 'price': payload.price, 'coinname': payload.coinname, 'userid': payload.userid , 'transactionID': payload.transactionID]]" doc:name="Variable"/>
-        <flow-ref name="" doc:name="Flow Reference"/>
+        <flow-ref name="thirdpartyexchangeSelectorSub_Flow" doc:name="Flow Reference"/>
         <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
         <logger message="Before choice------------- #[payload]------------ #[message.inboundProperties.'http.status']" level="INFO" doc:name="Logger"/>
         <choice doc:name="Choice">
@@ -40,11 +37,33 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
                 <logger message="Default Scope Logger" level="INFO" doc:name="Default Logger"/>
             </otherwise>
         </choice>
-    </sub-flow>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+			<logger
+				message="-----------------&gt;&gt;&gt; Adding Message #[payload] to Failed Queue"
+				level="INFO" doc:name="Logger" />
+			<object-to-string-transformer doc:name="Object to String" />
+			<jms:outbound-endpoint queue="Failed Queue"
+				connector-ref="Active_MQ_Failed" doc:name="JMS: Failed Queue Producer" />
+		</catch-exception-strategy>
+    </flow>
     <sub-flow name="thirdpartyexchangeSelectorSub_Flow">
         <choice doc:name="Choice">
-            <when expression="">
-                <until-successful maxRetries="4" failureExpression="#[message.inboundProperties.'http.status'=='500']" synchronous="true" doc:name="Until Successful">
+            <when expression="#[message.inboundProperties.buyexchange == 'CoinMarketCap']">
+                <until-successful maxRetries="4" failureExpression="#[message.inboundProperties.'http.status'=='500']" synchronous="true" doc:name="Until Successful: CoinMarket Cap">
+                    <http:request config-ref="HTTP_Request_Configuration_mockingservice" path="/exchange" method="POST" doc:name="HTTP: Mocking Service">
+                        <http:success-status-code-validator values="200..599"/>
+                    </http:request>
+                </until-successful>
+            </when>
+            <when expression="#[message.inboundProperties.buyexchange == 'ACX']">
+                <until-successful maxRetries="4" failureExpression="#[message.inboundProperties.'http.status'=='500']" synchronous="true" doc:name="Until Successful: ACX">
+                    <http:request config-ref="HTTP_Request_Configuration_mockingservice" path="/exchange" method="POST" doc:name="HTTP: Mocking Service">
+                        <http:success-status-code-validator values="200..599"/>
+                    </http:request>
+                </until-successful>
+            </when>
+            <when expression="#[message.inboundProperties.buyexchange == 'Bittrex']">
+                <until-successful maxRetries="4" failureExpression="#[message.inboundProperties.'http.status'=='500']" synchronous="true" doc:name="Until Successful: Bittrex">
                     <http:request config-ref="HTTP_Request_Configuration_mockingservice" path="/exchange" method="POST" doc:name="HTTP: Mocking Service">
                         <http:success-status-code-validator values="200..599"/>
                     </http:request>
@@ -70,4 +89,5 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
         <db:bulk-execute config-ref="Oracle_Configuration" doc:name="Database"><![CDATA[INSERT INTO THIRDPARTYORDERBOOK  (QUANTITY, COINNAME, USERID, ORIGINALTRANSACTIONID, THIRDPARTYTRANSACTIONID, TRANSACTIONHASH, SUCCESS) VALUES  (#[payload.quantity], '#[payload.coinname]','#[payload.userid]','#[payload.transactionid]','#[payload.thirdpartytransactionid]','#[payload.thirdpartytransactionhash]','#[payload.success]')]]></db:bulk-execute>
         <logger message="#[payload] &lt;&lt;&lt;-------------------- Transaction Completed Successfully---------------------&gt;&gt;&gt;&gt;" level="INFO" doc:name="Logger"/>
     </flow>
+    
 </mule>

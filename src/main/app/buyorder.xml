@@ -80,14 +80,7 @@ http://www.mulesoft.org/schema/mule/jbossts http://www.mulesoft.org/schema/mule/
 			</otherwise>
 		</choice>
 		<flow-ref name="responseSub_Flow" doc:name="responseSub_Flow" />
-		<catch-exception-strategy doc:name="Catch Exception Strategy">
-			<logger
-				message="-----------------&gt;&gt;&gt; Adding Message #[payload] to Failed Queue"
-				level="INFO" doc:name="Logger" />
-			<object-to-string-transformer doc:name="Object to String" />
-			<jms:outbound-endpoint queue="Failed Queue"
-				connector-ref="Active_MQ_Failed" doc:name="JMS: Failed Queue Producer" />
-		</catch-exception-strategy>
+		
 	</flow>
 	<sub-flow name="reservedPoolSub_Flow">
 		<set-variable variableName="ReservedBalanceQuantity"
@@ -174,7 +167,11 @@ INSERT INTO AUDIT_PROFIT (ORIGINAL_TRANSACTION,SETTLED_TRANSACTION,NETPROFIT, Ti
 				<set-payload
 					value="#[[ 'transactionID' : payload.transactionID, 'quantity': flowVars.thridPartyQunatity, 'coinname': payload.coinname , 'userid': payload.userid]]"
 					doc:name="Set Payload" />
-                <flow-ref name="thirdpartyexchangeSub_Flow" doc:name="Flow Reference"/>
+                <message-properties-transformer doc:name="Message Properties">
+                    <add-message-property key="buyexchange" value="#[flowVars.EnricherPrice.exchange]"/>
+                    <add-message-property key="thirdpartyprice" value="#[flowVars.price]"/>
+                </message-properties-transformer>
+               <jms:outbound-endpoint doc:name="JMS" connector-ref="Active_MQ_Consumer" queue="ThirdPartyOrderQueue"/>
 
 			</when>
 			<when expression="#[flowVars.sellStatus=='Partial']">
@@ -257,9 +254,8 @@ INSERT INTO audit_profit  (ORIGINAL_TRANSACTION,SETTLED_TRANSACTION,NETPROFIT, T
 	<sub-flow name="buypriceSub_Flow">
 		<set-payload value="#[['coinname': payload.coinname, 'eprice': 'min']]"
 			doc:name="Set Payload" />
-		<flow-ref name="buySellRateSub_Flow" doc:name="Flow Reference" />
-		<json:json-to-object-transformer
-			returnClass="java.lang.Object" doc:name="JSON to Object" />
+		<flow-ref name="pricingFlowSub_Flow" doc:name="Flow Reference" />
+
 	</sub-flow>
 
 

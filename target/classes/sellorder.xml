@@ -93,8 +93,7 @@ http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee
     </sub-flow>
     <sub-flow name="sellpriceSub_Flow">
         <set-payload value="#[['coinname': payload.coinname, 'eprice': 'max']]" doc:name="Set Payload"/>
-        <flow-ref name="buySellRateSub_Flow" doc:name="Flow Reference"/>
-        <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
+        <flow-ref name="pricingFlowSub_Flow" doc:name="Flow Reference"/>
     </sub-flow>
 </mule>
 

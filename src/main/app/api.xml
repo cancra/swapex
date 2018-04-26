@@ -41,7 +41,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 
     </flow>
     <flow name="get:/buySellRate:api-config">
-        <flow-ref name="buySellRateFlow" doc:name="buySellRateFlow"/>
+        <flow-ref name="pricingFlow" doc:name="pricingFlow"/>
 
     </flow>
         <flow name="get:/thirdPartyURI:api-config">

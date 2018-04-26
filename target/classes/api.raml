@@ -116,8 +116,8 @@ traits:
       type: string
       description: |  
        Crypto Currency Name based on First Exchange (Coin Market Cap)
-      enum: [ethereum, bitcoin, litecoin]
-      example: bitcoin
+      enum: [Bitcoin, Ethereum, Litecoin]
+      example: Bitcoin
       required: true
      eprice:
       displayName: ePrice
@@ -127,26 +127,6 @@ traits:
       example: max
       required: true
 
-
-/thirdPartyURI:
- description: |
-   Provide a URI of different exchanges
- get:
-  description: |
-   Gives you the URI of integrated exchanges 
-  responses:  
-    200:
-     body: 
-       application/json:          
-  queryParameters: 
-     coinuri:
-      displayName: coinuri
-      type: string
-      description: |  
-       Crypto Currency Name based on First Exchange (Coin Market Cap)
-      enum: [bitcoin, ethereum, litecoin]
-      example: bitcoin
-      required: true
 
 
 

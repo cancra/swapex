@@ -51,7 +51,7 @@ http://www.mulesoft.org/schema/mule/cors http://www.mulesoft.org/schema/mule/cor
 		host="${http.mockingservice.request.host}" port="${http.mockingservice.request.port}"
 		doc:name="HTTP Request Configuration" basePath="test" />
 
-	<context:property-placeholder location="local.properties" />
+	<context:property-placeholder location="dev.properties" />
 	<http:listener-config name="HTTP_Listener_Configuration"
 		host="${http.listner.host}" port="${http.listner.port}" doc:name="HTTP Listener Configuration" />
 	<http:request-config name="HTTP_Request_Configuration"

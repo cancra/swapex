@@ -36,71 +36,7 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
 			failOnTimeout="false" doc:name="Collection Aggregator" />
 		<flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow" />
 	</flow>
-    <flow name="buySellRateFlow">
-        <set-variable variableName="coinname" value="#[message.inboundProperties.'http.query.params'.coinname]" doc:name="Variable"/>
-        <set-variable variableName="eprice" value="#[message.inboundProperties.'http.query.params'.eprice]" doc:name="Variable"/>
-        <set-payload value="#[['coinname': flowVars.coinname, 'eprice': flowVars.eprice ]]" doc:name="Set Payload"/>
-        <flow-ref name="buySellRateSub_Flow" doc:name="Flow Reference"/>
-        
-      <!--   <choice doc:name="Choice: High/Low Price">
-            <when expression="#[message.payload[0]&gt;message.payload[1]]">
-                <set-payload value="#[message.payload[0]]" doc:name="Set Payload"/>
-            </when>
-            <when expression="#[message.payload[0]&lt;message.payload[1]]">
-                <set-payload value="#[message.payload[1]]" doc:name="Set Payload"/>
-            </when>
-            <otherwise>
-                <set-payload value="Inside default" doc:name="Set Payload"/>
-            </otherwise>
-        </choice> -->
-    </flow>
-    <sub-flow name="buySellRateSub_Flow">
-        <set-variable variableName="BuySell" value="#[payload.eprice]" doc:name="Variable"/>
-        <db:select config-ref="Oracle_Configuration" doc:name="Database">
-            <db:parameterized-query><![CDATA[select * from THIRDPARTYEXCHANGEURI where COINNAME = #[payload.coinname]]]></db:parameterized-query>
-        </db:select>
-        <logger message=" #[payload]" level="INFO" doc:name="Logger"/>
-        <scatter-gather doc:name="Scatter-Gather">
-            <processor-chain>
-                <http:request config-ref="HTTP_Request_Configuration" path="{id}/?convert=AUD" method="GET" doc:name="HTTP: Coin Market Cap">
-                    <http:request-builder>
-                        <http:uri-param paramName="id" value="#[payload[0].coinmarketcap]"/>
-                    </http:request-builder>
-                </http:request>
-                <json:json-to-object-transformer returnClass="java.util.List" doc:name="JSON to Object"/>
-                <set-variable variableName="CoinMarketCapValue" value="#[message.payload[0].price_aud]" doc:name="Variable: CoinMarketCapValue"/>
-                <set-payload value="#[['Exchange' : 'CoinMarketCap', 'Price' : flowVars.CoinMarketCapValue]]" mimeType="application/java" doc:name="Set Payload"/>
-            </processor-chain>
-            <processor-chain>
-                <http:request config-ref="HTTP_Request_Configuration_acx" path="/{id2}.json" method="GET" doc:name="HTTP: ACX">
-                    <http:request-builder>
-                        <http:uri-param paramName="id2" value="#[payload[0].acx]"/>
-                    </http:request-builder>
-                </http:request>
-                <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
-                <set-variable variableName="ACXValue" value="#[message.payload.ticker.buy]" doc:name="Variable: ACX"/>
-                <set-payload value="#[['Exchange' : 'ACX', 'Price' :flowVars.ACXValue]]" mimeType="application/java" doc:name="Set Payload"/>
-            </processor-chain>
-            <processor-chain>
-                <http:request config-ref="HTTP_Request_Configuration3" path="getticker?market={id3}" method="GET" doc:name="HTTP: Bittrex">
-                    <http:request-builder>
-                        <http:uri-param paramName="id3" value="#[payload[0].bittrex]"/>
-                    </http:request-builder>
-                </http:request>
-                <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
-                <enricher target="#[flowVars.usdaud]" doc:name="Message Enricher">
-                    <flow-ref name="usdtoaudConversionSub_Flow" doc:name="Flow Reference"/>
-                </enricher>
-                <set-payload value="#[['Exchange' : 'Bittrex','Price' : (message.payload.result.Bid * flowVars.usdaud[0]).toString()]]" doc:name="Set Payload"/>
-            </processor-chain>
-        </scatter-gather>
-        <json:object-to-json-transformer doc:name="Object to JSON"/>
-        <custom-transformer class="ceexchange.MinMaxPrice" doc:name="Java: MinMax"/>
-        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="JSON to Object"/>
-        <set-payload value="#[['exchange': payload.Exchange,'price': payload.Price, 'currency': 'AUD', 'type': flowVars.BuySell ]]" doc:name="Set Payload"/>
-        <flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow"/>
-    </sub-flow>
-
+ 
 	<flow name="ceexchangeRateFlow">
 		<http:request config-ref="HTTP_Request_Configuration"
 			path="{id}/?convert=AUD" method="GET" doc:name="HTTP">
