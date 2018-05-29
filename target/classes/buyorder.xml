@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:jbossts="http://www.mulesoft.org/schema/mule/jbossts"
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:jbossts="http://www.mulesoft.org/schema/mule/jbossts"
 	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
 	xmlns:file="http://www.mulesoft.org/schema/mule/file"
 	xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore"
@@ -17,9 +17,8 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd
 http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
-http://www.mulesoft.org/schema/mule/jbossts http://www.mulesoft.org/schema/mule/jbossts/current/mule-jbossts.xsd">
-	<objectstore:config name="ObjectStore__Connector"
-		partition="tradingengine" persistent="true" doc:name="ObjectStore: Connector" />
+http://www.mulesoft.org/schema/mule/jbossts http://www.mulesoft.org/schema/mule/jbossts/current/mule-jbossts.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
 	<jms:activemq-connector name="Active_MQ1"
 		specification="1.1" username="${activemq.username}" password="${activemq.password}"
 		brokerURL="tcp://${activemq.host}:${activemq.port}"
@@ -28,13 +27,14 @@ http://www.mulesoft.org/schema/mule/jbossts http://www.mulesoft.org/schema/mule/
 	<flow name="buyorderFlow" processingStrategy="synchronous">
 
 		<jms:inbound-endpoint queue="BuyOrderQueue"
-			connector-ref="Active_MQ_Consumer" doc:name="JMS: BuyOrderQueue Consumer" />
+			connector-ref="Active_MQ_Consumer" doc:name="JMS: BuyOrderQueue Consumer" >
+        </jms:inbound-endpoint>
 		<json:json-to-object-transformer
 			returnClass="java.lang.Object" doc:name="JSON to Object" />
 		<logger message="#[payload]" level="INFO" doc:name="Logger" />
 		<enricher source="#[payload]" target="#[flowVars.EnricherPrice]"
-			doc:name="Message Enricher">
-			<flow-ref name="buypriceSub_Flow" doc:name="Flow Reference" />
+			doc:name="Message Enricher: EnricherPrice">
+			<flow-ref name="buypriceSub_Flow" doc:name="buypriceSub_Flow" />
 		</enricher>
 		<logger message="------------#[flowVars.EnricherPrice.price]"
 			level="INFO" doc:name="Logger" />
@@ -44,11 +44,12 @@ http://www.mulesoft.org/schema/mule/jbossts http://www.mulesoft.org/schema/mule/
 			message="Ask Quantity ---#[payload.quantity]-------------Ask Price ----------#[flowVars.EnricherPrice.price]"
 			level="INFO" doc:name="Logger: Ask Quantity and Ask Price" />
 		<enricher source="#[payload]" target="#[flowVars.ReserveCheck]"
-			doc:name="Message Enricher">
+			doc:name="Message Enricher: ReserveCheck">
 			<db:select config-ref="Oracle_Configuration" doc:name="Database">
 				<db:parameterized-query><![CDATA[select * from reserved_pool where COINNAME = #[payload.coinname]]]></db:parameterized-query>
 			</db:select>
 		</enricher>
+        <logger message="#[flowVars.fiatbal] ------------------- #[flowVars.EnricherPrice.price ]" level="INFO" doc:name="Logger"/>
 		<logger
 			message="Buy Order----#[flowVars.EnricherPrice.price]-------Reserve Pool Price --- #[flowVars.ReserveCheck[0].RESERVED_POOL_PRICE]--------- Reserved Pool Quantity #[flowVars.ReserveCheck[0].AVAILABLEQUANTITY]"
 			level="INFO" doc:name="Logger" />
@@ -80,6 +81,7 @@ http://www.mulesoft.org/schema/mule/jbossts http://www.mulesoft.org/schema/mule/
 			</otherwise>
 		</choice>
 		<flow-ref name="responseSub_Flow" doc:name="responseSub_Flow" />
+        <object-to-string-transformer doc:name="Object to String"/>
 		
 	</flow>
 	<sub-flow name="reservedPoolSub_Flow">
@@ -89,7 +91,7 @@ http://www.mulesoft.org/schema/mule/jbossts http://www.mulesoft.org/schema/mule/
 		<set-variable variableName="NetProfit"
 			value="#[(flowVars.EnricherPrice.price - flowVars.ReserveCheck[0].RESERVED_POOL_PRICE)* message.payload.quantity]"
 			doc:name="Variable: Net" />
-		<enricher target="#[flowVars.DBFlagReservePool]" doc:name="Message Enricher">
+		<enricher target="#[flowVars.DBFlagReservePool]" doc:name="Message Enricher: DBFlagReservePool">
 			<db:bulk-execute config-ref="Oracle_Configuration"
 				doc:name="Database"><![CDATA[update reserved_pool set AVAILABLEQUANTITY = #[flowVars.ReservedBalanceQuantity] where COINNAME ='#[payload.coinname]';
 
@@ -252,9 +254,9 @@ INSERT INTO audit_profit  (ORIGINAL_TRANSACTION,SETTLED_TRANSACTION,NETPROFIT, T
 			doc:name="Object to JSON" />
 	</sub-flow>
 	<sub-flow name="buypriceSub_Flow">
-		<set-payload value="#[['coinname': payload.coinname, 'eprice': 'min']]"
+		<set-payload value="#[['coinname': payload.coinname , 'eprice': 'min']]"
 			doc:name="Set Payload" />
-		<flow-ref name="pricingFlowSub_Flow" doc:name="Flow Reference" />
+		<flow-ref name="pricingFlowSub_Flow" doc:name="pricingFlowSub_Flow" />
 
 	</sub-flow>
 

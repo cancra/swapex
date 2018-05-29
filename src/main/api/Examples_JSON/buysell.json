@@ -1,5 +1,6 @@
 {
-           "buySellRate": "13047.2985457",
-           "currency": "AUD",
-           "type": "Max"
+  "currency": "AUD",
+  "exchange": "Bittrex",
+  "type": "max",
+  "price": "11028.92"
 }

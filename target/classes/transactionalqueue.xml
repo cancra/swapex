@@ -19,20 +19,19 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
     
     
     <flow name="transactional_BuyOrder_QueueFlow" processingStrategy="synchronous">
-        <logger message="#[payload]--------------Transaction ID----- #[java.util.UUID.randomUUID()]" level="INFO" doc:name="Logger"/>
+        <logger message="&lt;&lt;--------------------------Transactional Buy Order Flow Started --------------------------&gt;&gt;" level="INFO" doc:name="Logger"/>
         <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
         <enricher target="#[flowVars.transactionExists]" doc:name="Message Enricher">
             <db:select config-ref="Oracle_Configuration" doc:name="Database">
-                <db:parameterized-query><![CDATA[select TXN_ID from CCY_TRADE_HISTORY where TXN_ID = #[payload.transactionID] and TYPE ='Buy']]></db:parameterized-query>
+                <db:parameterized-query><![CDATA[select TXN_ID from CCY_TRADE_HISTORY where TXN_ID = #[payload.transactionID] and TYPE ='buy']]></db:parameterized-query>
             </db:select>
         </enricher>
         <logger message="#[payload]---------------- #[flowVars.transactionExists]" level="INFO" doc:name="Logger"/>
         <choice doc:name="Choice">
             <when expression="#[flowVars.transactionExists.size() == 1]">
-                <jms:outbound-endpoint queue="BuyOrderQueue" connector-ref="Active_MQ" doc:name="JMS:  Buy Order Queue  Producer"/>
+                <jms:outbound-endpoint queue="BuyOrderQueue" connector-ref="Active_MQ" doc:name="JMS:  Buy Order Queue  Producer"/> 
                 <message-properties-transformer doc:name="Message Properties">
                     <add-message-property key="Content-Type" value="application/json"/>
-                    <add-message-property key="Access-Control-Allow-Credentials" value="true"/>
                     <add-message-property key="Access-Control-Allow-Headers" value="Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Allow-Credentials"/>
                     <add-message-property key="Access-Control-Allow-Methods" value="PUT, GET, POST, DELETE, OPTIONS"/>
                     <add-message-property key="Access-Control-Allow-Origin" value="*"/>
@@ -52,13 +51,13 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
         <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
         <enricher target="#[flowVars.transactionExists]" doc:name="Message Enricher">
             <db:select config-ref="Oracle_Configuration" doc:name="Database">
-                <db:parameterized-query><![CDATA[select TXN_ID from CCY_TRADE_HISTORY where TXN_ID = #[payload.transactionID] and TYPE ='Sell']]></db:parameterized-query>
+                <db:parameterized-query><![CDATA[select TXN_ID from CCY_TRADE_HISTORY where TXN_ID = #[payload.transactionID] and TYPE ='sell']]></db:parameterized-query>
             </db:select>
         </enricher>
         <logger message="#[payload]---------------- #[flowVars.transactionExists]" level="INFO" doc:name="Logger"/>
         <choice doc:name="Choice">
             <when expression="#[flowVars.transactionExists.size() == 1]">
-                <jms:outbound-endpoint queue="SellOrderQueue" connector-ref="Active_MQ" doc:name="JMS: Sell Order Queue  Producer"/>
+               <jms:outbound-endpoint queue="SellOrderQueue" connector-ref="Active_MQ" doc:name="JMS: Sell Order Queue  Producer"/>
                 <message-properties-transformer doc:name="Message Properties">
                     <add-message-property key="Content-Type" value="application/json"/>
                     <add-message-property key="Access-Control-Allow-Credentials" value="true"/>
@@ -76,7 +75,15 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
             </otherwise>
         </choice>
     </flow>
-    
+    <flow name="testBuyFlow">
+        <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <jms:outbound-endpoint queue="BuyOrderQueuetest" connector-ref="Active_MQ" doc:name="Copy_of_JMS:  Buy Order Queue  Producer"/>
+    </flow>
+    <flow name="testSellFlow">
+        <jms:outbound-endpoint queue="SellOrderQueuetest" connector-ref="Active_MQ" doc:name="Copy_of_JMS: Sell Order Queue  Producer"/>
+    </flow>
+       
 
     <sub-flow name="SMTPSub_Flow">
         <logger message="#[payload.alert]" level="INFO" doc:name="Logger: Sending Email Alert for Low Reserve Pool"/>

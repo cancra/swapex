@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:jbossts="http://www.mulesoft.org/schema/mule/jbossts" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
+http://www.mulesoft.org/schema/mule/jbossts http://www.mulesoft.org/schema/mule/jbossts/current/mule-jbossts.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <http:listener-config name="HTTP_Listener_ConfigurationMockingExchange" host="${http.mockingservice.listner.host}" port="${http.mockingservice.listner.port}" basePath="test" doc:name="HTTP Listener Configuration"/>
+    
+    
+    <flow name="transactional_BuyOrder_QueueFlow" processingStrategy="synchronous">
+        <logger message="&lt;&lt;--------------------------Transactional Buy Order Flow Started --------------------------&gt;&gt;" level="INFO" doc:name="Logger"/>
+        <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
+        <enricher target="#[flowVars.transactionExists]" doc:name="Message Enricher">
+            <db:select config-ref="Oracle_Configuration" doc:name="Database">
+                <db:parameterized-query><![CDATA[select TXN_ID from CCY_TRADE_HISTORY where TXN_ID = #[payload.transactionID] and TYPE ='buy']]></db:parameterized-query>
+            </db:select>
+        </enricher>
+        <logger message="#[payload]---------------- #[flowVars.transactionExists]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.transactionExists.size() == 1]">
+                <jms:outbound-endpoint queue="BuyOrderQueue" connector-ref="Active_MQ" doc:name="JMS:  Buy Order Queue  Producer"/> 
+                <message-properties-transformer doc:name="Message Properties">
+                    <add-message-property key="Content-Type" value="application/json"/>
+                    <add-message-property key="Access-Control-Allow-Headers" value="Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Allow-Credentials"/>
+                    <add-message-property key="Access-Control-Allow-Methods" value="PUT, GET, POST, DELETE, OPTIONS"/>
+                    <add-message-property key="Access-Control-Allow-Origin" value="*"/>
+                </message-properties-transformer>
+                <set-payload value="[     {         &quot;Message&quot;: &quot;Your Buy Order has been placed sucessfully, Please wait while we are processing your order&quot;                  } ]" doc:name="Set Payload"/>
+            </when>
+            <otherwise>
+                <message-properties-transformer doc:name="Message Properties">
+                    <add-message-property key="http.status" value="400"/>
+                </message-properties-transformer>
+                <set-payload value="[     {         &quot;Message&quot;: &quot;INVALID TRANSACTION, Please Contact Support&quot;                  } ]" doc:name="Set Payload"/>
+            </otherwise>
+        </choice>
+    </flow>
+        <flow name="transactional_SellOrder_QueueFlow" processingStrategy="synchronous">
+        <logger message="#[payload]--------------Transaction ID----- #[java.util.UUID.randomUUID()]" level="INFO" doc:name="Logger"/>
+        <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
+        <enricher target="#[flowVars.transactionExists]" doc:name="Message Enricher">
+            <db:select config-ref="Oracle_Configuration" doc:name="Database">
+                <db:parameterized-query><![CDATA[select TXN_ID from CCY_TRADE_HISTORY where TXN_ID = #[payload.transactionID] and TYPE ='sell']]></db:parameterized-query>
+            </db:select>
+        </enricher>
+        <logger message="#[payload]---------------- #[flowVars.transactionExists]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.transactionExists.size() == 1]">
+               <jms:outbound-endpoint queue="SellOrderQueue" connector-ref="Active_MQ" doc:name="JMS: Sell Order Queue  Producer"/>
+                <message-properties-transformer doc:name="Message Properties">
+                    <add-message-property key="Content-Type" value="application/json"/>
+                    <add-message-property key="Access-Control-Allow-Credentials" value="true"/>
+                    <add-message-property key="Access-Control-Allow-Headers" value="Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Allow-Credentials"/>
+                    <add-message-property key="Access-Control-Allow-Methods" value="PUT, GET, POST, DELETE, OPTIONS"/>
+                    <add-message-property key="Access-Control-Allow-Origin" value="*"/>
+                </message-properties-transformer>
+                <set-payload value="[     {         &quot;Message&quot;: &quot;Your Sell Order has been placed sucessfully, Please wait while we are processing your order&quot;                  } ]" doc:name="Set Payload"/>
+            </when>
+            <otherwise>
+                <message-properties-transformer doc:name="Message Properties">
+                    <add-message-property key="http.status" value="400"/>
+                </message-properties-transformer>
+                <set-payload value="[     {         &quot;Message&quot;: &quot;INVALID TRANSACTION, Please Contact Support&quot;                  } ]" doc:name="Set Payload"/>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="testBuyFlow">
+        <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <jms:outbound-endpoint queue="BuyOrderQueuetest" connector-ref="Active_MQ" doc:name="Copy_of_JMS:  Buy Order Queue  Producer"/>
+    </flow>
+    <flow name="testSellFlow">
+        <jms:outbound-endpoint queue="SellOrderQueuetest" connector-ref="Active_MQ" doc:name="Copy_of_JMS: Sell Order Queue  Producer"/>
+    </flow>
+       
+
+    <sub-flow name="SMTPSub_Flow">
+        <logger message="#[payload.alert]" level="INFO" doc:name="Logger: Sending Email Alert for Low Reserve Pool"/>
+        <set-payload value="&quot;ALERT&quot;!!!  Crypto Centric Reserved Pool is Low&quot;   
+
+The available Balance in Reserve is #[flowVars.ReserveCheck[0].AVAILABLEQUANTITY]
+
+This is an Automated Response, DO NOT REPLY ;-)" mimeType="text/plain" doc:name="Set Payload"/>
+        <smtp:outbound-endpoint host="smtpauth.deliverycentric.com" port="587" user="swapnil.sahu@deliverycentric.com" password="Dcitblr_SS" connector-ref="SMTP" to="Leena.rajan@deliverycentric.com,Swapnil.sahu@deliverycentric.com" responseTimeout="10000" doc:name="SMTP"/>
+    </sub-flow>
+   
+</mule>

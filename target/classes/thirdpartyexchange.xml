@@ -19,7 +19,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
         <jms:inbound-endpoint doc:name="JMS" connector-ref="Active_MQ_Consumer" queue="ThirdPartyOrderQueue"/>
         <logger message="Consumer Logger --------------&gt;&gt;&gt;  #[payload]" level="INFO" doc:name="Logger"/>
         <set-variable variableName="JMSOriginalOrder" value="#[['quantity': payload.quantity, 'price': payload.price, 'coinname': payload.coinname, 'userid': payload.userid , 'transactionID': payload.transactionID]]" doc:name="Variable"/>
-        <flow-ref name="thirdpartyexchangeSelectorSub_Flow" doc:name="Flow Reference"/>
+        <flow-ref name="thirdpartyexchangeSelectorSub_Flow" doc:name="thirdpartyexchangeSelectorSub_Flow"/>
         <json:json-to-object-transformer returnClass="java.lang.Object" doc:name="JSON to Object"/>
         <logger message="Before choice------------- #[payload]------------ #[message.inboundProperties.'http.status']" level="INFO" doc:name="Logger"/>
         <choice doc:name="Choice">
@@ -69,6 +69,9 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
                     </http:request>
                 </until-successful>
             </when>
+            <otherwise>
+                <logger message="No Matching Exchange Found" level="INFO" doc:name="Logger"/>
+            </otherwise>
         </choice>
     </sub-flow>
     <flow name="MockingExchangeFlow">

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:bti="http://www.mulesoft.org/schema/mule/ee/bti"
+	xmlns:cors="http://www.mulesoft.org/schema/mule/cors" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
+	xmlns:ss="http://www.springframework.org/schema/security" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/spring-security http://www.mulesoft.org/schema/mule/spring-security/current/mule-spring-security.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/spring-security http://www.mulesoft.org/schema/mule/spring-security/3.9/mule-spring-security.xsd
+http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.0.xsd
+http://www.mulesoft.org/schema/mule/cors http://www.mulesoft.org/schema/mule/cors/current/mule-cors.xsd">
+
+
+	<!-- *******Base Auth******* -->
+	<spring:beans>
+		<ss:authentication-manager alias="authenticationManager">
+			<ss:authentication-provider>
+				<ss:user-service id="userService">
+					<ss:user name="${base.auth.user.username}" password="${base.auth.user.password}"
+						authorities="ROLE_ADMIN" />
+					<ss:user name="${base.auth.admin.username}" password="${base.auth.admin.password}"
+						authorities="ROLE_DEV" />
+				</ss:user-service>
+			</ss:authentication-provider>
+		</ss:authentication-manager>
+	</spring:beans>
+
+	<mule-ss:security-manager doc:name="Spring Security Provider"
+		name="Spring_Security_Provider">
+		<mule-ss:delegate-security-provider
+			name="memory-provider" delegate-ref="authenticationManager" />
+	</mule-ss:security-manager>
+
+	<!-- *******Object Store******* -->
+	<spring:beans>
+		<spring:bean id="objectStore"
+			class="org.mule.util.store.SimpleMemoryObjectStore" />
+	</spring:beans>
+
+	<http:request-config name="HTTP_Request_Configuration_mockingservice"
+		host="${http.mockingservice.request.host}" port="${http.mockingservice.request.port}"
+		doc:name="HTTP Request Configuration" basePath="test" />
+	<http:request-config name="HTTP_Request_Configuration"
+		host="${http.request.host}" port="${http.request.port}" basePath="${http.request.basepath}"
+		doc:name="HTTP Request Configuration" />
+	<http:request-config name="HTTP_Request_Configuration_GlobalData"
+		host="${http.request.host}" port="${http.request.port}" basePath="${http.request.globalbasepath}"
+		doc:name="HTTP Request Configuration" />
+
+	<http:request-config name="HTTP_BTCTransaction_Request_Configuration"
+		host="${btc.request.host}" port="${btc.request.port}" doc:name="HTTP Request Configuration">
+		<http:basic-authentication username="${btc.request.username}"
+			password="${btc.request.password}" preemptive="true" />
+	</http:request-config>
+
+	<!-- ThirdParty Exchange configuration -->
+	<http:request-config name="HTTP_Request_Configuration_Bittrex"
+		protocol="HTTPS" host="bittrex.com" port="443" basePath="api/v1.1/public"
+		doc:name="HTTP Request Configuration" />
+
+	<http:request-config name="HTTP_Request_Configuration_ACX"
+		protocol="HTTPS" host="acx.io" port="443" basePath="/api/v2/tickers"
+		doc:name="HTTP Request Configuration" />
+	<http:request-config name="HTTP_Request_Configuration_IR"
+		protocol="HTTPS" host="api.independentreserve.com" port="443"
+		basePath="Public/" doc:name="HTTP Request Configuration" />
+	<http:request-config name="HTTP_Request_ConfigurationUSDtoAUD"
+		host="mycurrency.net" port="80" doc:name="HTTP Request Configuration" />
+	<http:request-config name="HTTP_Request_Configuration_Binance"
+		protocol="HTTPS" host="api.binance.com" port="443" basePath="api/v3"
+		doc:name="HTTP Request Configuration" />
+
+	<context:property-placeholder location="dev.properties" />
+	<http:listener-config name="HTTP_Listener_Configuration"
+		host="${http.listner.host}" port="${http.listner.port}" doc:name="HTTP Listener Configuration" />
+
+
+
+	<apikit:config xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit"
+		name="api-config" raml="api.raml" consoleEnabled="false" doc:name="Router"
+		keepRamlBaseUri="false" />
+
+	<jms:activemq-connector name="Active_MQ"
+		username="${activemq.username}" password="${activemq.password}"
+		brokerURL="tcp://${activemq.host}:${activemq.port}"
+		validateConnections="true" doc:name="Active MQ" specification="1.1" />
+	<jms:activemq-connector name="Active_MQ_Consumer"
+		specification="1.1" username="${activemq.username}" password="${activemq.password}"
+		brokerURL="tcp://${activemq.host}:${activemq.port}"
+		validateConnections="true" doc:name="Active MQ" />
+	<jms:activemq-connector name="Active_MQ_Sucess"
+		specification="1.1" username="${activemq.username}" password="${activemq.password}"
+		brokerURL="tcp://${activemq.host}:${activemq.port}"
+		validateConnections="true" doc:name="Active MQ" />
+	<jms:activemq-connector name="Active_MQ_Failed"
+		specification="1.1" username="${activemq.username}" password="${activemq.password}"
+		brokerURL="tcp://${activemq.host}:${activemq.port}"
+		validateConnections="true" doc:name="Active MQ" />
+	<file:connector name="File" outputPattern="test.json"
+		writeToDirectory="src/main/resources" autoDelete="false" outputAppend="true"
+		streaming="true" validateConnections="true" doc:name="File" />
+	<db:oracle-config name="Oracle_Configuration" host="${db.host}"
+		port="${db.port}" instance="${db.instance}" user="${db.user}"
+		password="${db.password}" doc:name="Oracle Configuration" />
+
+	<smtp:connector name="SMTP" contentType="text/plain"
+		fromAddress="swapnil.sahu@deliverycentric.com" subject="Cryptocentric ALERT!!! Low Reserve Pool Balance"
+		validateConnections="true" doc:name="SMTP" />
+
+	<!-- *******CORS******* -->
+	<cors:config name="Cors_Configuration" doc:name="Cors Configuration">
+		<cors:origins>
+			<cors:origin url="*" accessControlMaxAge="180">
+				<cors:methods>
+					<cors:method>GET</cors:method>
+					<cors:method>POST</cors:method>
+					<cors:method>PUT</cors:method>
+					<cors:method>DELETE</cors:method>
+					<cors:method>OPTIONS</cors:method>
+				</cors:methods>
+				<cors:headers>
+					<cors:header>X-Allow-Origin</cors:header>
+				</cors:headers>
+			</cors:origin>
+		</cors:origins>
+	</cors:config>
+
+
+</mule>

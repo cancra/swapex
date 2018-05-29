@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+
+    <sub-flow name="btctransactionSub_Flow">
+        <set-payload value="{  &quot;jsonrpc&quot;: &quot;1.0&quot;,  &quot;id&quot;:&quot;#[payload.transactionID]&quot;,  &quot;method&quot;: &quot;sendtoaddress&quot;,  &quot;params&quot;: [&quot;#[payload.walletaddress]&quot;, #[payload.quantity], &quot;Buy Orders&quot;, &quot;Sended quantity to #[payload.userid] with transactionID: #[payload.transactionID]&quot;]  }" doc:name="Set Payload" mimeType="text/plain"/>
+        <message-properties-transformer doc:name="Message Properties">
+            <add-message-property key="Content-Type" value="text/plain"/>
+        </message-properties-transformer>
+        <logger message="BTC Payload---&gt;&gt;&gt; #[payload]------------#[flowVars.ReservedBalanceQuantity] " level="INFO" doc:name="Logger"/>
+    </sub-flow>
+</mule>

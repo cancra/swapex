@@ -38,6 +38,15 @@ public class ProcessSellOrders extends AbstractMessageTransformer {
                                 
                                 //Jason String is converted into a sorted jason array
                                 JSONArray jsonArr = new JSONArray(jsonStr);
+                                
+                                if(jsonArr.length()==0)
+                                {
+                                    message.setInvocationProperty("flagVariable", false);
+                                    return message;
+
+
+                                }
+                                else {
                                 JSONArray sortedJsonArray = new JSONArray();
 
                                 List<JSONObject> jsonValues = new ArrayList<JSONObject>();
@@ -198,6 +207,7 @@ public class ProcessSellOrders extends AbstractMessageTransformer {
 
                                 
                                 return message;
+                                }
 
                 }
 

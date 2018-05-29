@@ -1,0 +1,26 @@
+[
+  {
+    "SELLSTATUS": "Open",
+    "QUOTED_PRICE": 12308.83890444,
+    "QUANTITY": 2,
+    "COINNAME": "Bitcoin"
+  },
+  {
+    "SELLSTATUS": "Open",
+    "QUOTED_PRICE": 11802.74368,
+    "QUANTITY": 3,
+    "COINNAME": "Bitcoin"
+  },
+  {
+    "SELLSTATUS": "Open",
+    "QUOTED_PRICE": 11798.190963728,
+    "QUANTITY": 4.55,
+    "COINNAME": "Bitcoin"
+  },
+  {
+    "SELLSTATUS": "Open",
+    "QUOTED_PRICE": 11761.125050064,
+    "QUANTITY": 0.001,
+    "COINNAME": "Bitcoin"
+  }
+]

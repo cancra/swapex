@@ -16,21 +16,21 @@ http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
 http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
-    <http:request-config name="HTTP_Request_Configuration_acx" protocol="HTTPS" host="acx.io" port="443" basePath="/api/v2/tickers" doc:name="HTTP Request Configuration"/>
-    <http:request-config name="HTTP_Request_Configuration_IR" protocol="HTTPS" host="api.independentreserve.com" port="443" basePath="Public/" doc:name="HTTP Request Configuration"/>
-    <http:request-config name="HTTP_Request_Configuration2" protocol="HTTPS" host="bittrex.com" port="443" basePath="/api/v1.1/public/getticker" doc:name="HTTP Request Configuration"/>
-    <http:request-config name="HTTP_Request_ConfigurationUSDtoAUD" host="mycurrency.net" port="80" doc:name="HTTP Request Configuration"/>
-    <http:request-config name="HTTP_Request_Configuration3" protocol="HTTPS" host="bittrex.com" port="443" basePath="api/v1.1/public" doc:name="HTTP Request Configuration"/>
 
 	<flow name="ceexchangeFlow">
 		<http:request config-ref="HTTP_Request_Configuration"
-			path="/?convert=AUD&amp;limit=10" method="GET" doc:name="HTTP" />
+			path="/?convert=AUD&amp;start={start}&amp;limit={limit}" method="GET" doc:name="HTTP" >
+            <http:request-builder>
+                <http:uri-param paramName="start" value="#[message.inboundProperties.'http.query.params'.start]"/>
+                <http:uri-param paramName="limit" value="#[message.inboundProperties.'http.query.params'.limit]"/>
+            </http:request-builder>
+        </http:request>
 		<json:json-to-object-transformer
 			returnClass="java.util.List" doc:name="JSON to Object" />
 		<collection-splitter enableCorrelation="ALWAYS"
 			doc:name="Collection Splitter" />
 		<set-payload
-			value="#[[  'id': payload.id,  'name' : payload.name, 'symbol' : payload.symbol, 'rank' : payload.rank,  'price' : payload.price_aud,  'marketCap' : payload.market_cap_aud,  'percentageChange' : payload.percent_change_24h]]"
+			value="#[[  'id': payload.id,  'name' : payload.name, 'symbol' : payload.symbol, 'rank' : payload.rank,  'price' : payload.price_aud,  'marketcap' : payload.market_cap_aud,  'recentmovers' : payload.percent_change_1h]]"
 			doc:name="Set Payload" />
 		<collection-aggregator timeout="6000"
 			failOnTimeout="false" doc:name="Collection Aggregator" />
@@ -81,7 +81,7 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
 	</flow>
     <flow name="thirdPartyURIFlow">
        
-        <flow-ref name="ceexchangeResponseSub_Flow" doc:name="Flow Reference"/>
+        <flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow"/>
     </flow>
 
 	<flow name="cecurrencyInfoSymbolFlow">
@@ -101,6 +101,13 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
 		<json:object-to-json-transformer
 			doc:name="Object to JSON" />
 	</flow>
+    <flow name="openSellOrdersFlow">
+        <db:select config-ref="Oracle_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[select COINNAME, QUANTITY, QUOTED_PRICE, SELLSTATUS from SELL_ORDER]]></db:parameterized-query>
+        </db:select>
+        <logger level="INFO" doc:name="Logger"/>
+        <flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow"/>
+    </flow>
     <sub-flow name="usdtoaudConversionSub_Flow">
         <http:request config-ref="HTTP_Request_ConfigurationUSDtoAUD" path="/service/rates" method="GET" doc:name="HTTP"/>
         <custom-transformer class="ceexchange.UsdToAud" doc:name="Java"/>

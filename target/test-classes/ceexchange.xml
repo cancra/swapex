@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+
+	<flow name="ceexchangeFlow">
+		<http:request config-ref="HTTP_Request_Configuration"
+			path="/?convert=AUD&amp;start={start}&amp;limit={limit}" method="GET" doc:name="HTTP" >
+            <http:request-builder>
+                <http:uri-param paramName="start" value="#[message.inboundProperties.'http.query.params'.start]"/>
+                <http:uri-param paramName="limit" value="#[message.inboundProperties.'http.query.params'.limit]"/>
+            </http:request-builder>
+        </http:request>
+		<json:json-to-object-transformer
+			returnClass="java.util.List" doc:name="JSON to Object" />
+		<collection-splitter enableCorrelation="ALWAYS"
+			doc:name="Collection Splitter" />
+		<set-payload
+			value="#[[  'id': payload.id,  'name' : payload.name, 'symbol' : payload.symbol, 'rank' : payload.rank,  'price' : payload.price_aud,  'marketcap' : payload.market_cap_aud,  'recentmovers' : payload.percent_change_1h]]"
+			doc:name="Set Payload" />
+		<collection-aggregator timeout="6000"
+			failOnTimeout="false" doc:name="Collection Aggregator" />
+		<flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow" />
+	</flow>
+ 
+	<flow name="ceexchangeRateFlow">
+		<http:request config-ref="HTTP_Request_Configuration"
+			path="{id}/?convert=AUD" method="GET" doc:name="HTTP">
+			<http:request-builder>
+                <http:uri-param paramName="id" value="#[message.inboundProperties.'http.query.params'.id]"/>
+			</http:request-builder>
+		</http:request>
+		<json:json-to-object-transformer
+			returnClass="java.util.List" doc:name="JSON to Object" />
+		<set-payload
+			value="#[[ 'exchangeRate': payload[0].price_aud, 'currency': 'AUD' ]]"
+			doc:name="Set Payload" />
+		<flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow" />
+	</flow>
+
+	<flow name="ceexchangeGlobalDataFlow">
+		<http:request config-ref="HTTP_Request_Configuration_GlobalData"
+			path="/?convert=AUD" method="GET" doc:name="HTTP" />
+		<flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow" />
+	</flow>
+
+	<flow name="ceexchangeLimitFlow">
+		<http:request config-ref="HTTP_Request_Configuration"
+			path="/?convert=AUD&amp;start={start}&amp;limit={limit}" method="GET"
+			doc:name="HTTP">
+			<http:request-builder>
+                <http:uri-param paramName="start" value="#[message.inboundProperties.'http.query.params'.start]"/>
+                <http:uri-param paramName="limit" value="#[message.inboundProperties.'http.query.params'.limit]"/>
+			</http:request-builder>
+		</http:request>
+		<flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow" />
+	</flow>
+
+	<flow name="cecurrencyInfoFlow">
+		<http:request config-ref="HTTP_Request_Configuration"
+			path="{id}/?convert=AUD" method="GET" doc:name="HTTP">
+			<http:request-builder>
+                <http:uri-param paramName="id" value="#[message.inboundProperties.'http.query.params'.id]"/>
+			</http:request-builder>
+		</http:request>
+		<flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow" />
+	</flow>
+    <flow name="thirdPartyURIFlow">
+       
+        <flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow"/>
+    </flow>
+
+	<flow name="cecurrencyInfoSymbolFlow">
+		<set-variable variableName="sym"
+			value="#[message.inboundProperties.'http.query.params'.sym]"
+			doc:name="Variable" />
+        <logger message="#[flowVars.sym]" level="INFO" doc:name="Logger"/>
+		<http:request config-ref="HTTP_Request_Configuration"
+			path="/?convert=AUD" method="GET" doc:name="HTTP" />
+		<custom-transformer class="ceexchange.Symbol"
+			doc:name="Java" />
+		<logger message="#[payload]" level="INFO" doc:name="Logger" />
+		<message-properties-transformer
+			doc:name="Message Properties">
+			<add-message-property key="Content-Type" value="application/json" />
+		</message-properties-transformer>
+		<json:object-to-json-transformer
+			doc:name="Object to JSON" />
+	</flow>
+    <flow name="openSellOrdersFlow">
+        <db:select config-ref="Oracle_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[select COINNAME, QUANTITY, QUOTED_PRICE, SELLSTATUS from SELL_ORDER]]></db:parameterized-query>
+        </db:select>
+        <logger level="INFO" doc:name="Logger"/>
+        <flow-ref name="ceexchangeResponseSub_Flow" doc:name="ceexchangeResponseSub_Flow"/>
+    </flow>
+    <sub-flow name="usdtoaudConversionSub_Flow">
+        <http:request config-ref="HTTP_Request_ConfigurationUSDtoAUD" path="/service/rates" method="GET" doc:name="HTTP"/>
+        <custom-transformer class="ceexchange.UsdToAud" doc:name="Java"/>
+    </sub-flow>
+
+	<sub-flow name="ceexchangeResponseSub_Flow">
+		<logger message="#[payload]" level="INFO" doc:name="Logger" />
+		<message-properties-transformer
+			doc:name="Message Properties">
+			<add-message-property key="Content-Type" value="application/json" />
+            <add-message-property key="Access-Control-Allow-Credentials" value="true"/>
+            <add-message-property key="Access-Control-Allow-Headers" value="Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Allow-Credentials"/>
+            <add-message-property key="Access-Control-Allow-Methods" value="PUT, GET, POST, DELETE, OPTIONS"/>
+            <add-message-property key="Access-Control-Allow-Origin" value="*"/>
+		</message-properties-transformer>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+	</sub-flow>
+
+</mule>
+

@@ -34,71 +34,6 @@ traits:
     example: bitcoin
     required: true
  
-/exchange:
- description: |
-   Provide the information on ID, Name, Price, MarketCap and Percentage change in 24 hours of top 10 Crypto Currencies
- get:
-  responses: 
-    200:
-      description: |
-        Get JSON response for property - ID, Name, Price, MarketCap and Percentage change in 24 hours of top 10 Crypto Currencies
-      body: 
-        application/json:
-         example: !include Examples_JSON/exchangeJSON.json
-         
-/global:
- description: |
-  Provide Global Data in AUD
- get:
-  responses:
-    200:
-      description: |
-       GET JSON respinse for Global Data in AUD
-      body:
-        application/json:
-         example: !include Examples_JSON/global.json
-
-/buyOrder:
- description: |
-   Receive and process customer orders
- post: 
-  body: 
-    application/json:
-  responses: 
-    201:
-      description: |
-        Create and Process Order
-      body: 
-        application/json:
-          example: !include Examples_JSON/order.json
-
-/sellOrder:
- description: |
-   Receive and process customer orders
- post:
-  body: 
-    application/json:
-  responses: 
-    201:
-      description: |
-        Create and Process Order
-      body: 
-        application/json:
-          example: !include Examples_JSON/order.json
-
-/sellMatch:
- description: |
-   Receive and process customer orders
- post:
-  body: 
-    application/json:
-  responses: 
-    201:
-      description: |
-        Create and Process Order
-      body: 
-        application/json:
-          
 /buySellRate:
  description: |
    Provide a buy or sell exchange rate of specific coin
@@ -116,7 +51,7 @@ traits:
       type: string
       description: |  
        Crypto Currency Name based on First Exchange (Coin Market Cap)
-      enum: [Bitcoin, Ethereum, Litecoin]
+      enum: [Bitcoin, Ethereum]
       example: Bitcoin
       required: true
      eprice:
@@ -126,6 +61,100 @@ traits:
       enum: [max , min]
       example: max
       required: true
+
+/exchange:
+ description: |
+   Provide the information on ID, Name, Price, MarketCap and Percentage change in 24 hours of top 10 Crypto Currencies
+ get:
+  responses: 
+    200:
+      description: |
+        Get JSON response for property - ID, Name, Price, MarketCap and Percentage change in 24 hours of top 300 Crypto Currencies
+      body: 
+        application/json:
+         example: !include Examples_JSON/exchangeJSON.json      
+          
+  queryParameters:
+   start:
+    displayName: start
+    type: number
+    description: |
+      Starting ranking from 0
+    example: 1
+    required: true
+   limit:
+    displayName: limit
+    type: number
+    description: |
+      Ranking limit
+    example: 300
+    required: true
+         
+/global:
+ description: |
+  Provide Global Data in AUD
+ get:
+  responses:
+    200:
+      description: |
+       GET JSON response for Global Data in AUD
+      body:
+        application/json:
+         example: !include Examples_JSON/global.json
+
+/openSellOrders:
+ description: |
+  Provide Open Sell Orders
+ get:
+  responses:
+    200:
+      description: |
+       GET open sell orders as JSON response
+      body:
+        application/json:
+         example: !include Examples_JSON/opesellorder.json
+
+/buyOrder:
+ description: |
+   Receive and process customer orders
+ post: 
+  body: 
+    application/json:
+  responses: 
+    201:
+      description: |
+        Create and Process Order
+      body: 
+        application/json:
+          example: !include Examples_JSON/buyorder.json
+
+/sellOrder:
+ description: |
+   Receive and process customer orders
+ post:
+  body: 
+    application/json:
+  responses: 
+    201:
+      description: |
+        Create and Process Order
+      body: 
+        application/json:
+          example: !include Examples_JSON/sellorder.json
+
+/sellMatch:
+ description: |
+   Receive and process customer orders
+ post:
+  body: 
+    application/json:
+  responses: 
+    201:
+      description: |
+        Create and Process Order
+      body: 
+        application/json:
+          
 
 
 

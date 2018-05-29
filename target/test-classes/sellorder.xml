@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jbossts="http://www.mulesoft.org/schema/mule/jbossts" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/jbossts http://www.mulesoft.org/schema/mule/jbossts/current/mule-jbossts.xsd">
+	
+	<flow name="sellorderFlow">
+		<jms:inbound-endpoint queue="SellOrderQueue"
+			connector-ref="Active_MQ" doc:name="JMS" >
+        </jms:inbound-endpoint>
+
+		<json:json-to-object-transformer
+			returnClass="java.lang.Object" doc:name="JSON to Object" />
+		<logger message="#[payload]" level="INFO" doc:name="Logger" />
+		<enricher target="#[flowVars.sellEnricherPrice]" doc:name="Message Enricher">
+			<flow-ref name="sellpriceSub_Flow" doc:name="sellpriceSub_Flow" />
+		</enricher>
+		<logger message="#[flowVars.sellEnricherPrice.price]--------------#[payload]"
+			level="INFO" doc:name="Logger" />
+		<enricher source="#[payload]" target="#[flowVars.FiatReserveCheck]"
+			doc:name="Message Enricher">
+			<db:select config-ref="Oracle_Configuration" doc:name="Database">
+				<db:parameterized-query><![CDATA[select AvailableFiat from Fiat_Reserved_Pool]]></db:parameterized-query>
+			</db:select>
+		</enricher>
+		<logger
+			message="Sell Order----Price #[flowVars.sellEnricherPrice.price]-------Reserve Pool Fiat Available--- #[flowVars.FiatReserveCheck[0].AVAILABLEFIAT]"
+			level="INFO" doc:name="Logger" />
+		<choice doc:name="Choice">
+			<when
+				expression="#[flowVars.sellEnricherPrice.price &lt;= flowVars.FiatReserveCheck[0].AVAILABLEFIAT]">
+				<logger
+					message="Selling Price is Less than Fiat Reserve Availibility ----Fiat Available in Fiat Reserve #[flowVars.FiatReserveCheck[0].AVAILABLEFIAT]"
+					level="INFO" doc:name="Logger: Fiat Reserved Pool" />
+			</when>
+			<when
+				expression="#[flowVars.sellEnricherPrice.price &gt; flowVars.FiatReserveCheck[0].AVAILABLEFIAT]">
+				<logger
+					message="Buy Price is Less than Price in Reserved Pool---&gt;&gt; Sending Order in Sell Order Pool #[payload]"
+					level="INFO" doc:name="Logger: Sell Order Book" />
+				<db:bulk-execute config-ref="Oracle_Configuration"
+					doc:name="Database"><![CDATA[INSERT INTO Sell_Order (COINNAME, QUANTITY, QUOTED_PRICE,SellTransactionId,SellStatus,ORIGINALQUANTITY,Time_Stamp) VALUES ('#[payload.coinname]',#[payload.quantity],#[flowVars.sellEnricherPrice.price],'#[payload.transactionID]','Open',#[payload.quantity],CURRENT_TIMESTAMP)]]></db:bulk-execute>
+                <logger message="---------------------------------Order Saved in Sell Order Table---------------------------------" level="INFO" doc:name="Logger"/>
+			</when>
+			<otherwise>
+				<logger
+					message="Default Logger(First Choice)---- No matching price found for Order"
+					level="INFO" doc:name="Logger" />
+			</otherwise>
+		</choice>
+
+	</flow>
+	<sub-flow name="fiatreservedPoolSub_Flow">
+		<set-variable variableName="FiatReserveBalance"
+			value="#[flowVars.FiatReserveCheck[0].AVAILABLEFIAT-( flowVars.sellEnricherPrice.price)]"
+			doc:name="Variable" />
+		<enricher target="#[flowVars.DBFlagFiatReservePool]" doc:name="Message Enricher">
+			<db:bulk-execute config-ref="Oracle_Configuration"
+				doc:name="Database"><![CDATA[update Fiat_Reserved_Pool set AvailableFiat = #[flowVars.FiatReserveBalance]]]></db:bulk-execute>
+		</enricher>
+		<logger
+			message="Fiat Balance After Reserved Pool Deduction #[flowVars.FiatReserveBalance]"
+			level="INFO" doc:name="Logger" />
+		<choice doc:name="Choice">
+			<when
+				expression="#[flowVars.FiatReserveCheck[0].AVAILABLEFIAT  &gt; flowVars.FiatReserveBalance[0].FIAT_RESERVE_THRESHOLD]">
+				<logger
+					message="#[payload]------------- Sending the details for Transfer from user wallet to Coin Reserve to Complete Sell Transaction---------------------"
+					level="INFO" doc:name="Logger" />
+			</when>
+			<when
+				expression="#[flowVars.FiatReserveCheck[0].AVAILABLEFIAT  &lt;= flowVars.FiatReserveBalance[0].FIAT_RESERVE_THRESHOLD]">
+				<logger message="#[payload]" level="INFO"
+					doc:name="Logger: Threshold Reached" />
+				<flow-ref name="SMTPSub_Flow" doc:name="SMTPSub_Flow" />
+			</when>
+			<otherwise>
+				<logger message="Default Logger of Completed Reserve Pool"
+					level="INFO" doc:name="Copy_of_Logger" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<flow name="matchingSellOrderFlow">
+		<logger message="DataBase Polling from OIM schedular----------&gt;#[payload]"
+			level="INFO" doc:name="Logger" />
+		<enricher target="#[flowVars.bittrexOrderBook]" doc:name="Message Enricher">
+			<http:request config-ref="HTTP_Request_Configuration_Bittrex"
+				path="getorderbook?market=USDT-BTC&amp;type=sell" method="GET" doc:name="HTTP" />
+		</enricher>
+		<logger message="#[payload]-------------#[flowVars.bittrexOrderBook]"
+			level="INFO" doc:name="Logger" />
+	</flow>
+	<sub-flow name="sellorderSub_Flow">
+		<logger message="#[payload]" level="INFO" doc:name="Logger" />
+		<enricher target="#[flowVars.SellInsert]" doc:name="Message Enricher">
+			<db:select config-ref="Oracle_Configuration" doc:name="Database">
+				<db:parameterized-query><![CDATA[select * from Sell_Order]]></db:parameterized-query>
+			</db:select>
+		</enricher>
+		<enricher target="#[flowVars.SellCheckJson]" doc:name="Message Enricher">
+			<expression-transformer
+				expression="#[new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(flowVars.SellCheck)]"
+				doc:name="Expression" />
+		</enricher>
+		<logger
+			message="--------------------------- Message ----------------------------- Order ----#[flowVars.SellCheckJson] ------ #[payload]"
+			level="INFO" doc:name="Logger" />
+		<logger
+			message="Before Sell Choice-----Payload: #[payload]---------Flag Variable: #[flowVars.flagVariable]---------Partial Variable:#[flowVars.PartialMap]---------Sell Status Variable:#[flowVars.sellStatus]---------Original Message Variable: #[flowVars.OriginalMessage]-----RemainingQuantity Variable: #[flowVars.RemainingQuantity]"
+			level="INFO" doc:name="Logger" />
+		<choice doc:name="Choice">
+			<when
+				expression="#[flowVars.sellStatus=='CLOSED' &amp;&amp; flowVars.flagVariable== true]">
+				<logger
+					message="Completely Matched Order #[payload]----------------- #[flowVars.OriginalMessage]"
+					level="INFO" doc:name="Logger: True Complete the transaction with Sell Orders" />
+				<enricher source="#[flowVars.OriginalMessage]" target="#[flowVars.test3]"
+					doc:name="Message Enricher">
+					<foreach collection="#[flowVars.OriginalMessage]" doc:name="For Each">
+						<db:update config-ref="Oracle_Configuration" doc:name="Database">
+							<db:dynamic-query><![CDATA[update Sell_Order set SELLSTATUS = 'Close', QUANTITY =0 where SellTransactionId ='#[payload]']]></db:dynamic-query>
+						</db:update>
+					</foreach>
+				</enricher>
+				<logger message="Full Transaction Completed on Sell Order #[payload]"
+					level="INFO" doc:name="Logger" />
+			</when>
+			<when
+				expression="#[flowVars.sellStatus=='THIRDPARTY' &amp;&amp; flowVars.flagVariable== false]">
+				<logger
+					message="Into Third Party Transaction for Partial Deduction followed by Third Party Transaction----------------#[payload]"
+					level="INFO"
+					doc:name="Logger: Redirect to Third Party API for Remaining Transaction" />
+				<enricher source="#[flowVars.OriginalMessage]" target="#[flowVars.test2]"
+					doc:name="Message Enricher">
+					<foreach collection="#[flowVars.OriginalMessage]" doc:name="For Each">
+						<db:update config-ref="Oracle_Configuration" doc:name="Database">
+							<db:dynamic-query><![CDATA[update Sell_Order set SELLSTATUS = 'Close', QUANTITY = 0 where SellTransactionId ='#[payload]']]></db:dynamic-query>
+						</db:update>
+					</foreach>
+				</enricher>
+				<logger message="Order for Third Party Exchange -----#[payload]"
+					level="INFO" doc:name="Logger: Third Party Order" />
+				<set-payload
+					value="    {         &quot;transactionID&quot;:&quot;#[payload.transactionID]&quot;,         &quot;quantity&quot;:&quot;#[flowVars.thridPartyQunatity]&quot;,         &quot;coinname&quot;:&quot;#[payload.coinname]&quot;,         &quot;price&quot;:&quot;#[payload.price]&quot;,         &quot;userid&quot;:&quot;#[payload.userid]&quot;     }"
+					mimeType="application/json" doc:name="Set Payload" />
+			</when>
+			<when expression="#[flowVars.sellStatus=='Partial']">
+				<logger
+					message="Partial Deduction and Settled witin Sell Order------------- with transaction id written in MAP---#[flowVars.PartialMap]------------- and-------- CompletedOrder--- #[flowVars.OriginalMessage]"
+					level="INFO"
+					doc:name="Logger: Partial Settlement with Third Party and Completed Settlement" />
+				<enricher source="#[flowVars.OriginalMessage]" target="#[flowVars.test1]"
+					doc:name="Message Enricher">
+					<foreach collection="#[flowVars.OriginalMessage]" doc:name="For Each">
+						<db:update config-ref="Oracle_Configuration" doc:name="Database">
+							<db:dynamic-query><![CDATA[update Sell_Order set SELLSTATUS = 'Close', QUANTITY = 0 where SellTransactionId ='#[payload]']]></db:dynamic-query>
+						</db:update>
+					</foreach>
+				</enricher>
+				<logger
+					message="#[payload]------------ #[flowVars.PartialMap.partialTransactionQuantity]------------- SELLTRANSACTIONID--- #[flowVars.PartialMap.partialTransactionID]------------- ThridPartyQunatity: #[flowVars.thridPartyQunatity]"
+					level="INFO" doc:name="Logger" />
+				<db:update config-ref="Oracle_Configuration" doc:name="Database">
+					<db:dynamic-query><![CDATA[update Sell_Order set SELLSTATUS = 'Partial', QUANTITY = #[flowVars.PartialMap.partialTransactionQuantity] where SELLTRANSACTIONID ='#[flowVars.PartialMap.partialTransactionID]']]></db:dynamic-query>
+				</db:update>
+				<logger message="#[payload]" level="INFO" doc:name="Logger" />
+			</when>
+			<otherwise>
+				<logger
+					message="Default Logger----------Second Choice---- No matching price found for Order------- May Send the order to Third Party"
+					level="INFO" doc:name="Logger" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="sellpriceSub_Flow">
+		<set-payload value="#[['coinname': payload.coinname, 'eprice': 'max']]"
+			doc:name="Set Payload" />
+		<flow-ref name="pricingFlowSub_Flow" doc:name="pricingFlowSub_Flow" />
+	</sub-flow>
+
+</mule>
+

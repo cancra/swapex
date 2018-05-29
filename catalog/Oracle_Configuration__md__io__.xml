@@ -768,6 +768,97 @@
           </org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
         </entry>
         <entry>
+          <string>select AvailableFiat from Fiat_Reserved_Pool</string>
+          <org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
+            <output class="org.mule.common.metadata.DefaultMetaData">
+              <payload class="org.mule.common.metadata.DefaultListMetaDataModel">
+                <dataType>LIST</dataType>
+                <metaDataModelPropertiesManager>
+                  <properties/>
+                </metaDataModelPropertiesManager>
+                <model class="org.mule.common.metadata.DefaultDefinedMapMetaDataModel">
+                  <dataType>MAP</dataType>
+                  <metaDataModelPropertiesManager>
+                    <properties/>
+                  </metaDataModelPropertiesManager>
+                  <fields>
+                    <org.mule.common.metadata.DefaultMetaDataField>
+                      <name>AVAILABLEFIAT</name>
+                      <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel">
+                        <dataType>DECIMAL</dataType>
+                        <metaDataModelPropertiesManager>
+                          <properties/>
+                        </metaDataModelPropertiesManager>
+                      </model>
+                      <accessType>READ_WRITE</accessType>
+                      <metaDataFieldPropertyManager>
+                        <properties>
+                          <org.mule.common.metadata.field.property.dsql.DsqlSelectMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlWhereMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlOrderMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                            <supportedOperators>
+                              <org.mule.common.query.expression.LessOperator/>
+                              <org.mule.common.query.expression.LessOrEqualsOperator/>
+                              <org.mule.common.query.expression.EqualsOperator/>
+                              <org.mule.common.query.expression.GreaterOperator/>
+                              <org.mule.common.query.expression.GreaterOrEqualsOperator/>
+                              <org.mule.common.query.expression.NotEqualsOperator/>
+                            </supportedOperators>
+                          </org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                        </properties>
+                      </metaDataFieldPropertyManager>
+                    </org.mule.common.metadata.DefaultMetaDataField>
+                  </fields>
+                </model>
+                <isArray>false</isArray>
+              </payload>
+              <properties class="tree-map">
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>FLOW</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>INBOUND</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>OUTBOUND</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>SESSION</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>RECORD</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+              </properties>
+            </output>
+          </org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
+        </entry>
+        <entry>
           <string>select * from reserved_pool where COINNAME = &apos;Bitcoin&apos; and AVAILABLEQUANTITY &gt;= #[flowVars.OrderPrice]</string>
           <org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
             <output class="org.mule.common.metadata.DefaultMetaData">
@@ -4902,6 +4993,173 @@ from reserved_pool where COINNAME = #[message.inboundProperties.&apos;http.query
           </org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
         </entry>
         <entry>
+          <string>select amt from CCY_FIAT_TXN WHERE USR_KEY = #[payload.usr_key] and USER_ID = &apos;#[payload.userid]&apos;</string>
+          <org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
+            <input class="org.mule.common.metadata.DefaultMetaData">
+              <payload class="org.mule.common.metadata.DefaultDefinedMapMetaDataModel">
+                <dataType>MAP</dataType>
+                <metaDataModelPropertiesManager>
+                  <properties/>
+                </metaDataModelPropertiesManager>
+                <fields>
+                  <org.mule.common.metadata.DefaultMetaDataField>
+                    <name>usr_key</name>
+                    <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel">
+                      <dataType>STRING</dataType>
+                      <metaDataModelPropertiesManager>
+                        <properties/>
+                      </metaDataModelPropertiesManager>
+                    </model>
+                    <accessType>READ_WRITE</accessType>
+                    <metaDataFieldPropertyManager>
+                      <properties>
+                        <org.mule.common.metadata.field.property.dsql.DsqlSelectMetaDataFieldProperty/>
+                        <org.mule.common.metadata.field.property.dsql.DsqlWhereMetaDataFieldProperty/>
+                        <org.mule.common.metadata.field.property.dsql.DsqlOrderMetaDataFieldProperty/>
+                        <org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                          <supportedOperators>
+                            <org.mule.common.query.expression.LessOperator/>
+                            <org.mule.common.query.expression.LessOrEqualsOperator/>
+                            <org.mule.common.query.expression.EqualsOperator/>
+                            <org.mule.common.query.expression.GreaterOperator/>
+                            <org.mule.common.query.expression.GreaterOrEqualsOperator/>
+                            <org.mule.common.query.expression.NotEqualsOperator/>
+                            <org.mule.common.query.expression.LikeOperator/>
+                          </supportedOperators>
+                        </org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                      </properties>
+                    </metaDataFieldPropertyManager>
+                  </org.mule.common.metadata.DefaultMetaDataField>
+                </fields>
+              </payload>
+              <properties class="tree-map">
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>FLOW</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>INBOUND</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>OUTBOUND</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>SESSION</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>RECORD</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+              </properties>
+            </input>
+            <output class="org.mule.common.metadata.DefaultMetaData">
+              <payload class="org.mule.common.metadata.DefaultListMetaDataModel">
+                <dataType>LIST</dataType>
+                <metaDataModelPropertiesManager>
+                  <properties/>
+                </metaDataModelPropertiesManager>
+                <model class="org.mule.common.metadata.DefaultDefinedMapMetaDataModel">
+                  <dataType>MAP</dataType>
+                  <metaDataModelPropertiesManager>
+                    <properties/>
+                  </metaDataModelPropertiesManager>
+                  <fields>
+                    <org.mule.common.metadata.DefaultMetaDataField>
+                      <name>AMT</name>
+                      <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel" reference="../../../../../../input/payload/fields/org.mule.common.metadata.DefaultMetaDataField/model"/>
+                      <accessType>READ_WRITE</accessType>
+                      <metaDataFieldPropertyManager>
+                        <properties>
+                          <org.mule.common.metadata.field.property.dsql.DsqlSelectMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlWhereMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlOrderMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                            <supportedOperators>
+                              <org.mule.common.query.expression.LessOperator/>
+                              <org.mule.common.query.expression.LessOrEqualsOperator/>
+                              <org.mule.common.query.expression.EqualsOperator/>
+                              <org.mule.common.query.expression.GreaterOperator/>
+                              <org.mule.common.query.expression.GreaterOrEqualsOperator/>
+                              <org.mule.common.query.expression.NotEqualsOperator/>
+                              <org.mule.common.query.expression.LikeOperator/>
+                            </supportedOperators>
+                          </org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                        </properties>
+                      </metaDataFieldPropertyManager>
+                    </org.mule.common.metadata.DefaultMetaDataField>
+                  </fields>
+                </model>
+                <isArray>false</isArray>
+              </payload>
+              <properties class="tree-map">
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>FLOW</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>INBOUND</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>OUTBOUND</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>SESSION</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>RECORD</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+              </properties>
+            </output>
+          </org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
+        </entry>
+        <entry>
           <string>select * from Sell_Order where COINNAME = #[message.inboundProperties.&apos;http.query.params&apos;.coinname] and QUANTITY = #[flowVars.OrderPrice] and QUOTED_PRICE = #[message.inboundProperties.&apos;http.query.params&apos;.price]</string>
           <org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
             <output class="org.mule.common.metadata.DefaultMetaData">
@@ -8754,6 +9012,288 @@ from reserved_pool where COINNAME = #[message.inboundProperties.&apos;http.query
           </org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
         </entry>
         <entry>
+          <string>select * from CCY_FIAT_TXN WHERE USR_KEY = #[payload.usr_key] and USER_ID = &apos;#[payload.userid]&apos;</string>
+          <org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
+            <input class="org.mule.common.metadata.DefaultMetaData">
+              <payload class="org.mule.common.metadata.DefaultDefinedMapMetaDataModel">
+                <dataType>MAP</dataType>
+                <metaDataModelPropertiesManager>
+                  <properties/>
+                </metaDataModelPropertiesManager>
+                <fields>
+                  <org.mule.common.metadata.DefaultMetaDataField>
+                    <name>usr_key</name>
+                    <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel">
+                      <dataType>STRING</dataType>
+                      <metaDataModelPropertiesManager>
+                        <properties/>
+                      </metaDataModelPropertiesManager>
+                    </model>
+                    <accessType>READ_WRITE</accessType>
+                    <metaDataFieldPropertyManager>
+                      <properties>
+                        <org.mule.common.metadata.field.property.dsql.DsqlSelectMetaDataFieldProperty/>
+                        <org.mule.common.metadata.field.property.dsql.DsqlWhereMetaDataFieldProperty/>
+                        <org.mule.common.metadata.field.property.dsql.DsqlOrderMetaDataFieldProperty/>
+                        <org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                          <supportedOperators>
+                            <org.mule.common.query.expression.LessOperator/>
+                            <org.mule.common.query.expression.LessOrEqualsOperator/>
+                            <org.mule.common.query.expression.EqualsOperator/>
+                            <org.mule.common.query.expression.GreaterOperator/>
+                            <org.mule.common.query.expression.GreaterOrEqualsOperator/>
+                            <org.mule.common.query.expression.NotEqualsOperator/>
+                            <org.mule.common.query.expression.LikeOperator/>
+                          </supportedOperators>
+                        </org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                      </properties>
+                    </metaDataFieldPropertyManager>
+                  </org.mule.common.metadata.DefaultMetaDataField>
+                </fields>
+              </payload>
+              <properties class="tree-map">
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>FLOW</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>INBOUND</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>OUTBOUND</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>SESSION</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>RECORD</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+              </properties>
+            </input>
+            <output class="org.mule.common.metadata.DefaultMetaData">
+              <payload class="org.mule.common.metadata.DefaultListMetaDataModel">
+                <dataType>LIST</dataType>
+                <metaDataModelPropertiesManager>
+                  <properties/>
+                </metaDataModelPropertiesManager>
+                <model class="org.mule.common.metadata.DefaultDefinedMapMetaDataModel">
+                  <dataType>MAP</dataType>
+                  <metaDataModelPropertiesManager>
+                    <properties/>
+                  </metaDataModelPropertiesManager>
+                  <fields>
+                    <org.mule.common.metadata.DefaultMetaDataField>
+                      <name>AMT</name>
+                      <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel" reference="../../../../../../input/payload/fields/org.mule.common.metadata.DefaultMetaDataField/model"/>
+                      <accessType>READ_WRITE</accessType>
+                      <metaDataFieldPropertyManager>
+                        <properties>
+                          <org.mule.common.metadata.field.property.dsql.DsqlSelectMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlWhereMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlOrderMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                            <supportedOperators>
+                              <org.mule.common.query.expression.LessOperator/>
+                              <org.mule.common.query.expression.LessOrEqualsOperator/>
+                              <org.mule.common.query.expression.EqualsOperator/>
+                              <org.mule.common.query.expression.GreaterOperator/>
+                              <org.mule.common.query.expression.GreaterOrEqualsOperator/>
+                              <org.mule.common.query.expression.NotEqualsOperator/>
+                              <org.mule.common.query.expression.LikeOperator/>
+                            </supportedOperators>
+                          </org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                        </properties>
+                      </metaDataFieldPropertyManager>
+                    </org.mule.common.metadata.DefaultMetaDataField>
+                    <org.mule.common.metadata.DefaultMetaDataField>
+                      <name>REF_MSG</name>
+                      <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel" reference="../../../../../../input/payload/fields/org.mule.common.metadata.DefaultMetaDataField/model"/>
+                      <accessType>READ_WRITE</accessType>
+                      <metaDataFieldPropertyManager>
+                        <properties>
+                          <org.mule.common.metadata.field.property.dsql.DsqlSelectMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlWhereMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlOrderMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                            <supportedOperators>
+                              <org.mule.common.query.expression.LessOperator/>
+                              <org.mule.common.query.expression.LessOrEqualsOperator/>
+                              <org.mule.common.query.expression.EqualsOperator/>
+                              <org.mule.common.query.expression.GreaterOperator/>
+                              <org.mule.common.query.expression.GreaterOrEqualsOperator/>
+                              <org.mule.common.query.expression.NotEqualsOperator/>
+                              <org.mule.common.query.expression.LikeOperator/>
+                            </supportedOperators>
+                          </org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                        </properties>
+                      </metaDataFieldPropertyManager>
+                    </org.mule.common.metadata.DefaultMetaDataField>
+                    <org.mule.common.metadata.DefaultMetaDataField>
+                      <name>STATUS</name>
+                      <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel" reference="../../../../../../input/payload/fields/org.mule.common.metadata.DefaultMetaDataField/model"/>
+                      <accessType>READ_WRITE</accessType>
+                      <metaDataFieldPropertyManager>
+                        <properties>
+                          <org.mule.common.metadata.field.property.dsql.DsqlSelectMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlWhereMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlOrderMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                            <supportedOperators>
+                              <org.mule.common.query.expression.LessOperator/>
+                              <org.mule.common.query.expression.LessOrEqualsOperator/>
+                              <org.mule.common.query.expression.EqualsOperator/>
+                              <org.mule.common.query.expression.GreaterOperator/>
+                              <org.mule.common.query.expression.GreaterOrEqualsOperator/>
+                              <org.mule.common.query.expression.NotEqualsOperator/>
+                              <org.mule.common.query.expression.LikeOperator/>
+                            </supportedOperators>
+                          </org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                        </properties>
+                      </metaDataFieldPropertyManager>
+                    </org.mule.common.metadata.DefaultMetaDataField>
+                    <org.mule.common.metadata.DefaultMetaDataField>
+                      <name>TXN_DATE</name>
+                      <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel" reference="../../../../../../input/payload/fields/org.mule.common.metadata.DefaultMetaDataField/model"/>
+                      <accessType>READ_WRITE</accessType>
+                      <metaDataFieldPropertyManager>
+                        <properties>
+                          <org.mule.common.metadata.field.property.dsql.DsqlSelectMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlWhereMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlOrderMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                            <supportedOperators>
+                              <org.mule.common.query.expression.LessOperator/>
+                              <org.mule.common.query.expression.LessOrEqualsOperator/>
+                              <org.mule.common.query.expression.EqualsOperator/>
+                              <org.mule.common.query.expression.GreaterOperator/>
+                              <org.mule.common.query.expression.GreaterOrEqualsOperator/>
+                              <org.mule.common.query.expression.NotEqualsOperator/>
+                              <org.mule.common.query.expression.LikeOperator/>
+                            </supportedOperators>
+                          </org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                        </properties>
+                      </metaDataFieldPropertyManager>
+                    </org.mule.common.metadata.DefaultMetaDataField>
+                    <org.mule.common.metadata.DefaultMetaDataField>
+                      <name>USER_ID</name>
+                      <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel" reference="../../../../../../input/payload/fields/org.mule.common.metadata.DefaultMetaDataField/model"/>
+                      <accessType>READ_WRITE</accessType>
+                      <metaDataFieldPropertyManager>
+                        <properties>
+                          <org.mule.common.metadata.field.property.dsql.DsqlSelectMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlWhereMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlOrderMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                            <supportedOperators>
+                              <org.mule.common.query.expression.LessOperator/>
+                              <org.mule.common.query.expression.LessOrEqualsOperator/>
+                              <org.mule.common.query.expression.EqualsOperator/>
+                              <org.mule.common.query.expression.GreaterOperator/>
+                              <org.mule.common.query.expression.GreaterOrEqualsOperator/>
+                              <org.mule.common.query.expression.NotEqualsOperator/>
+                              <org.mule.common.query.expression.LikeOperator/>
+                            </supportedOperators>
+                          </org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                        </properties>
+                      </metaDataFieldPropertyManager>
+                    </org.mule.common.metadata.DefaultMetaDataField>
+                    <org.mule.common.metadata.DefaultMetaDataField>
+                      <name>USR_KEY</name>
+                      <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel" reference="../../../../../../input/payload/fields/org.mule.common.metadata.DefaultMetaDataField/model"/>
+                      <accessType>READ_WRITE</accessType>
+                      <metaDataFieldPropertyManager>
+                        <properties>
+                          <org.mule.common.metadata.field.property.dsql.DsqlSelectMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlWhereMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlOrderMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                            <supportedOperators>
+                              <org.mule.common.query.expression.LessOperator/>
+                              <org.mule.common.query.expression.LessOrEqualsOperator/>
+                              <org.mule.common.query.expression.EqualsOperator/>
+                              <org.mule.common.query.expression.GreaterOperator/>
+                              <org.mule.common.query.expression.GreaterOrEqualsOperator/>
+                              <org.mule.common.query.expression.NotEqualsOperator/>
+                              <org.mule.common.query.expression.LikeOperator/>
+                            </supportedOperators>
+                          </org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                        </properties>
+                      </metaDataFieldPropertyManager>
+                    </org.mule.common.metadata.DefaultMetaDataField>
+                  </fields>
+                </model>
+                <isArray>false</isArray>
+              </payload>
+              <properties class="tree-map">
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>FLOW</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>INBOUND</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>OUTBOUND</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>SESSION</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+                <entry>
+                  <org.mule.common.metadata.MetaDataPropertyScope>RECORD</org.mule.common.metadata.MetaDataPropertyScope>
+                  <org.mule.common.metadata.MetaDataProperties>
+                    <fields class="sorted-set">
+                      <comparator class="org.mule.common.metadata.MetaDataProperties$MetaDataFieldComparator"/>
+                    </fields>
+                  </org.mule.common.metadata.MetaDataProperties>
+                </entry>
+              </properties>
+            </output>
+          </org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
+        </entry>
+        <entry>
           <string>select * from Sell_Order where COINNAME = #[message.inboundProperties.&apos;http.query.params&apos;.coinname] and QUANTITY &gt;= #[flowVars.OrderPrice] and QUOTED_PRICE = #[message.inboundProperties.&apos;http.query.params&apos;.price]</string>
           <org.mule.tooling.metadata.cache.DefaultMetadataCacheEntry>
             <output class="org.mule.common.metadata.DefaultMetaData">
@@ -9926,6 +10466,29 @@ from reserved_pool where COINNAME = #[message.inboundProperties.&apos;http.query
                     </org.mule.common.metadata.DefaultMetaDataField>
                     <org.mule.common.metadata.DefaultMetaDataField>
                       <name>SELLTRANSACTIONID</name>
+                      <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel" reference="../../org.mule.common.metadata.DefaultMetaDataField/model"/>
+                      <accessType>READ_WRITE</accessType>
+                      <metaDataFieldPropertyManager>
+                        <properties>
+                          <org.mule.common.metadata.field.property.dsql.DsqlSelectMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlWhereMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlOrderMetaDataFieldProperty/>
+                          <org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                            <supportedOperators>
+                              <org.mule.common.query.expression.LessOperator/>
+                              <org.mule.common.query.expression.LessOrEqualsOperator/>
+                              <org.mule.common.query.expression.EqualsOperator/>
+                              <org.mule.common.query.expression.GreaterOperator/>
+                              <org.mule.common.query.expression.GreaterOrEqualsOperator/>
+                              <org.mule.common.query.expression.NotEqualsOperator/>
+                              <org.mule.common.query.expression.LikeOperator/>
+                            </supportedOperators>
+                          </org.mule.common.metadata.field.property.dsql.DsqlQueryOperatorsMetaDataFieldProperty>
+                        </properties>
+                      </metaDataFieldPropertyManager>
+                    </org.mule.common.metadata.DefaultMetaDataField>
+                    <org.mule.common.metadata.DefaultMetaDataField>
+                      <name>TIME_STAMP</name>
                       <model class="org.mule.common.metadata.DefaultSimpleMetaDataModel" reference="../../org.mule.common.metadata.DefaultMetaDataField/model"/>
                       <accessType>READ_WRITE</accessType>
                       <metaDataFieldPropertyManager>

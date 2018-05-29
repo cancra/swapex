@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:cors="http://www.mulesoft.org/schema/mule/cors" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
+<mule xmlns:bti="http://www.mulesoft.org/schema/mule/ee/bti"
+	xmlns:cors="http://www.mulesoft.org/schema/mule/cors" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
 	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:file="http://www.mulesoft.org/schema/mule/file"
 	xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
 	xmlns:ss="http://www.springframework.org/schema/security" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit"
@@ -44,27 +45,53 @@ http://www.mulesoft.org/schema/mule/cors http://www.mulesoft.org/schema/mule/cor
 
 	<!-- *******Object Store******* -->
 	<spring:beans>
-		<spring:bean id="objectStore" class="org.mule.util.store.SimpleMemoryObjectStore" />
+		<spring:bean id="objectStore"
+			class="org.mule.util.store.SimpleMemoryObjectStore" />
 	</spring:beans>
 
 	<http:request-config name="HTTP_Request_Configuration_mockingservice"
 		host="${http.mockingservice.request.host}" port="${http.mockingservice.request.port}"
 		doc:name="HTTP Request Configuration" basePath="test" />
+	<http:request-config name="HTTP_Request_Configuration"
+		host="${http.request.host}" port="${http.request.port}" basePath="${http.request.basepath}"
+		doc:name="HTTP Request Configuration" />
+	<http:request-config name="HTTP_Request_Configuration_GlobalData"
+		host="${http.request.host}" port="${http.request.port}" basePath="${http.request.globalbasepath}"
+		doc:name="HTTP Request Configuration" />
+
+	<http:request-config name="HTTP_BTCTransaction_Request_Configuration"
+		host="${btc.request.host}" port="${btc.request.port}" doc:name="HTTP Request Configuration">
+		<http:basic-authentication username="${btc.request.username}"
+			password="${btc.request.password}" preemptive="true" />
+	</http:request-config>
+
+	<!-- ThirdParty Exchange configuration -->
+	<http:request-config name="HTTP_Request_Configuration_Bittrex"
+		protocol="HTTPS" host="bittrex.com" port="443" basePath="api/v1.1/public"
+		doc:name="HTTP Request Configuration" />
+
+	<http:request-config name="HTTP_Request_Configuration_ACX"
+		protocol="HTTPS" host="acx.io" port="443" basePath="/api/v2/tickers"
+		doc:name="HTTP Request Configuration" />
+	<http:request-config name="HTTP_Request_Configuration_IR"
+		protocol="HTTPS" host="api.independentreserve.com" port="443"
+		basePath="Public/" doc:name="HTTP Request Configuration" />
+	<http:request-config name="HTTP_Request_ConfigurationUSDtoAUD"
+		host="mycurrency.net" port="80" doc:name="HTTP Request Configuration" />
+	<http:request-config name="HTTP_Request_Configuration_Binance"
+		protocol="HTTPS" host="api.binance.com" port="443" basePath="api/v3"
+		doc:name="HTTP Request Configuration" />
 
 	<context:property-placeholder location="dev.properties" />
 	<http:listener-config name="HTTP_Listener_Configuration"
 		host="${http.listner.host}" port="${http.listner.port}" doc:name="HTTP Listener Configuration" />
-	<http:request-config name="HTTP_Request_Configuration"
-		host="${http.request.host}" port="${http.request.port}" basePath="${http.request.basepath}"
-		doc:name="HTTP Request Configuration" />
+
 
 
 	<apikit:config xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit"
 		name="api-config" raml="api.raml" consoleEnabled="false" doc:name="Router"
 		keepRamlBaseUri="false" />
-	<http:request-config name="HTTP_Request_Configuration_GlobalData"
-		host="${http.request.host}" port="${http.request.port}" basePath="${http.request.globalbasepath}"
-		doc:name="HTTP Request Configuration" />
+
 	<jms:activemq-connector name="Active_MQ"
 		username="${activemq.username}" password="${activemq.password}"
 		brokerURL="tcp://${activemq.host}:${activemq.port}"
@@ -89,30 +116,26 @@ http://www.mulesoft.org/schema/mule/cors http://www.mulesoft.org/schema/mule/cor
 		password="${db.password}" doc:name="Oracle Configuration" />
 
 	<smtp:connector name="SMTP" contentType="text/plain"
-		fromAddress="swapnil.sahu@deliverycentric.com"
-		subject="Cryptocentric ALERT!!! Low Reserve Pool Balance"
+		fromAddress="swapnil.sahu@deliverycentric.com" subject="Cryptocentric ALERT!!! Low Reserve Pool Balance"
 		validateConnections="true" doc:name="SMTP" />
-		
-		<!-- *******CORS******* -->
-     <cors:config name="Cors_Configuration" doc:name="Cors Configuration">
-     <cors:origins>
-         <cors:origin url="*" accessControlMaxAge="180">
-             <cors:methods>
-                 <cors:method>GET</cors:method>
-                 <cors:method>POST</cors:method>
-                 <cors:method>PUT</cors:method>
-                 <cors:method>DELETE</cors:method>
-                 <cors:method>OPTIONS</cors:method>
-             </cors:methods>
-             <cors:headers>
-                 <cors:header>X-Allow-Origin</cors:header>
-             </cors:headers>
-         </cors:origin>
-     </cors:origins>
- </cors:config>
- 		<!-- *******BTC Request Configuration******* -->
-     <http:request-config name="HTTP_BTCTransaction_Request_Configuration" host="${btc.request.host}" port="${btc.request.port}" doc:name="HTTP Request Configuration">
-        <http:basic-authentication username="${btc.request.username}" password="${btc.request.password}" preemptive="true"/>
-    </http:request-config>
+
+	<!-- *******CORS******* -->
+	<cors:config name="Cors_Configuration" doc:name="Cors Configuration">
+		<cors:origins>
+			<cors:origin url="*" accessControlMaxAge="180">
+				<cors:methods>
+					<cors:method>GET</cors:method>
+					<cors:method>POST</cors:method>
+					<cors:method>PUT</cors:method>
+					<cors:method>DELETE</cors:method>
+					<cors:method>OPTIONS</cors:method>
+				</cors:methods>
+				<cors:headers>
+					<cors:header>X-Allow-Origin</cors:header>
+				</cors:headers>
+			</cors:origin>
+		</cors:origins>
+	</cors:config>
+
 
 </mule>

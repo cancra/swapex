@@ -1,9 +1,11 @@
 [
-            {
-             "ID": "ethereum",
-             "Name": "Ethereum",
-             "Price": " 570.516660393 ",
-             "MarketCap": " 54795143764.0 ",
-             "PercentageChange": " -10.91 "
-            }
-          ]
+  {
+    "marketcap": "327738912.0",
+    "symbol": "SUB",
+    "price": "0.8556682595",
+    "name": "Substratum",
+    "rank": "80",
+    "recentmovers": "0.78",
+    "id": "substratum"
+  }
+]
